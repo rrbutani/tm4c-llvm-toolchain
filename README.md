@@ -44,18 +44,18 @@ This component is not particularly specific to the TM4C. The tools within the co
 
 The toolchain container gives us the tools we need to build projects for Arm devices in general, but it doesn't really know about our board. In order to put programs on a TM4C and run them there are a few other things we need to provide:
 
-###### [startup.c]()
+###### [startup.c](src/startup.c)
 This essentially sets up the [NVIC table](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dai0179b/ar01s01s01.html) (table of interrupt handlers), sets up memory, and starts our programs.
 
 This file also determines the naming convention for interrupt handlers.
 
-###### [tm4c.ld]()
+###### [tm4c.ld](misc/tm4c.ld)
 In order for our tools to make programs that we can flash onto our TM4C, they need to know how memory is arranged on our board. This linker script tells `ld.lld` things like how much flash and SRAM we have and where to put things like code and global variables.
 
-###### [gdb-script]()
+###### [gdb-script](misc/gdb-script)
 A debugger isn't _technically_ required to build and run programs, but it definitely is nice to have. In order to get GDB (a command line debugger) to talk to our TM4C, we have to tell it how to start OpenOCD (a program that facilitates MCU <-> computer communication), which is exactly what `gdb-script` does.
 
-There are also a few other files that are provided but those are for convenience and aren't _required_ ([intrinsics.s]() for example).
+There are also a few other files that are provided but those are for convenience and aren't _required_ ([intrinsics.s](asm/intrinsics.s) for example).
 
 As you've probably guessed, this component is _highly_ specific to the TM4C. It'll mostly work with the LM4F too, though with some key exceptions (no PWM peripherals on the LM4F).
 
@@ -74,10 +74,10 @@ Will search for files in the top of the folder and in src/ (for .s, .S, .c, .cpp
 ##### Targets
 Targets ending in .out build binaries (must contain a main). Targets ending in .a build libraries (we'll call these modules).
 
-##### Two Configurations: one directory and separate module.
+##### Two Configurations: one directory and separate common directory.
 
 ###### One Directory
-```
+```bash
 ├── asm
 │   └── intrinsics.s
 ├── build.ninja
@@ -96,7 +96,7 @@ Targets ending in .out build binaries (must contain a main). Targets ending in .
 `COMMON_PATH` in build.ninja is set to `.`; `TARGET` is set to `main.out`.
 
 ###### Separate Common Directory
-```
+```bash
 ├── common
 │   ├── asm
 │   │   └── intrinsics.s
@@ -125,11 +125,11 @@ Note that this won't use or even compile the `main.c` in `common/src`.
 
 ##### Modules
 
-Additionally, you can use other modules (other projects that are set up to compile a library - `TARGET` ends in .a) by adding the path of the library plus it's name to `MODULES`.
+Additionally, you can use other modules (other projects that are set up to compile a library - `TARGET` ends in .a) by adding the path of the module plus it's name to `MODULES`.
 
 For example, a separate common directory setup with some modules:
 
-```
+```bash
 ├── common
 │   ├── asm
 │   │   └── intrinsics.s
