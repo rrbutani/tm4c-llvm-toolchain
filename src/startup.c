@@ -361,33 +361,3 @@ void __default_rst_handler(void)
     main();
 }
 
-
-// volatile uint8_t* __aeabi_memclr4(volatile uint8_t* s, int n) {
-//     int i = 0;
-
-//     while (i < n) {
-//         *(s + i++) = 0;
-//     }
-
-//     return s;
-// }
-
-// // Wait for Interrupt 'intrinsic':
-// void wait_for_interrupt(void)
-// {
-//     __asm("    WFI\n    BX  lr\n");
-// }
-
-// void WFI(void) {
-//     wait_for_interrupt();
-// }
-
-
-// pub unsafe extern fn __aeabi_memclr4(s: *mut u8, n: usize) -> *mut u8 {
-//     let mut i = 0;
-//     while i < n {
-//         *s.offset(i as isize) = 0u8;
-//         i += 1;
-//     }
-//     return s;
-// }

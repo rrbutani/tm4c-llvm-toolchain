@@ -235,8 +235,8 @@ RUN : \
         clang-tools-${LLVM_VER} clang-tidy-${LLVM_VER} clang-format-${LLVM_VER} \
         lld-${LLVM_VER} \
         lldb-${LLVM_VER} \
+        libc++-${LLVM_VER}-dev libc++abi-${LLVM_VER}-dev \
         # clang-${LLVM_VER}-doc \
-        # libc++-${LLVM_VER}-dev libc++abi-${LLVM_VER}-dev \
     -qq 2>/dev/null
 
 ENV C_INCLUDE_PATH="$C_INCLUDE_PATH:${NEWLIB_NANO_DIR}/arm-none-eabi/include"
