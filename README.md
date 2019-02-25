@@ -26,7 +26,33 @@ There are really three components in this repo: a docker container that holds th
 
 ##### Toolchain Container
 
+This is essentially a bundle of the tools we need to build and run projects plus some of the libraries we need. Specifically, it contains:
+ - clang
+ - ld.lld + llvm-objcopy + llvm-ar + friends (essentially the LLVM alternatives to binutils)
+ - lldb 
+ - clangd + clang-format + clang-tidy
+ - gdb
+ - openocd
+ - newlib + newlib nano (libc, libm, libnosys)
+ - compiler-rt for Arm (intrinsics used by Clang)
+
+Perhaps confusingly, this contains what's typically regarded as the toolchain. Hence, _Toolchain Container_.
+
+This component is not particularly specific to the TM4C. The tools within the container can be used for any Arm target and the newlib build arguments can be tweaked to support other devices (there's more about this within the container's [Dockerfile](env/Dockerfile)).
+
 ##### Build and Initialization Files
+
+The toolchain container gives us the tools we need to build projects for Arm devices in general, but it doesn't really know about our board. In order to put programs on a TM4C and run them there are a couple of other things we need to provide:
+
+###### [startup.c]()
+This essentially sets up the [NVIC table](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dai0179b/ar01s01s01.html) (table of interrupt handlers), sets up memory, and starts our programs.
+
+This file also determines the naming convention for interrupt handlers.
+
+###### [tm4c.ld]()
+In order for our tools to make programs that we can flash onto our TM4C, they need to know how memory is arranged on our board. This linker script tells `ld.lld` things like how much flash and SRAM we have and where to put things like code and global variables.
+
+There are also a few other files that are provided but those are for convenience and aren't _required_ ([intrinsics.S]() for example).
 
 ##### Build System
 
@@ -71,3 +97,5 @@ There are really three components in this repo: a docker container that holds th
 - [ ] No host dependencies
     * [ ] Add ninja to the container
     * [ ] Get the build system to recognize when it's already running in the container
+- [ ] Install script (native alternative to using the docker container)
+- [ ] Push to Docker Hub
