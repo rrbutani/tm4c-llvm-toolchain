@@ -54,7 +54,13 @@ In order for our tools to make programs that we can flash onto our TM4C, they ne
 
 There are also a few other files that are provided but those are for convenience and aren't _required_ ([intrinsics.S]() for example).
 
+As you've probably guessed, this component is _highly_ specific to the TM4C. It'll mostly work with the LM4F too, though with some key exceptions (no PWM peripherals on the LM4F).
+
 ##### Build System
+
+Thanks to the previous two components, we have a system that can compile code and assemble binaries and talk to the TM4C. Now we just need something to go and push the right buttons and that's exactly what our build system does.
+
+
 
 ### Installation and Usage
 
