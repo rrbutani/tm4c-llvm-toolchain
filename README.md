@@ -3,6 +3,7 @@
 
 [![](https://tokei.rs/b1/github/rrbutani/tm4c-llvm-toolchain)](https://github.com/rrbutani/tm4c-llvm-toolchain)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![](https://images.microbadger.com/badges/image/rrbutani/arm-llvm-toolchain.svg)](https://cloud.docker.com/u/rrbutani/repository/docker/rrbutani/arm-llvm-toolchain)
 
 An opinionated toolchain for TI's [TM4C](http://www.ti.com/tool/EK-TM4C123GXL) (should work on the LM4F too).
 
