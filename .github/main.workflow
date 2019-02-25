@@ -5,6 +5,7 @@ workflow "Build toolchain container and push to Docker Hub" {
 
 action "Build toolchain container" {
   uses = "actions/docker/cli@8cdf801b322af5f369e00d85e9cf3a7122f49108"
+  needs = ["Log into Docker Hub"]
   args = "build -t arm-llvm-toolchain -f env/Dockerfile ."
 }
 
@@ -21,6 +22,6 @@ action "Tag toolchain container" {
 
 action "Push to Docker Hub" {
   uses = "actions/docker/cli@8cdf801b322af5f369e00d85e9cf3a7122f49108"
-  needs = ["Log into Docker Hub", "Tag toolchain container"]
+  needs = ["Tag toolchain container"]
   args = "push rrbutani/arm-llvm-toolchain"
 }
