@@ -29,7 +29,7 @@ There are really three components in this repo: a docker container that holds th
 This is essentially a bundle of the tools we need to build and run projects plus some of the libraries we need. Specifically, it contains:
  - clang
  - ld.lld + llvm-objcopy + llvm-ar + friends (essentially the LLVM alternatives to binutils)
- - lldb 
+ - lldb
  - clangd + clang-format + clang-tidy
  - gdb
  - openocd
@@ -42,7 +42,7 @@ This component is not particularly specific to the TM4C. The tools within the co
 
 ##### Build and Initialization Files
 
-The toolchain container gives us the tools we need to build projects for Arm devices in general, but it doesn't really know about our board. In order to put programs on a TM4C and run them there are a couple of other things we need to provide:
+The toolchain container gives us the tools we need to build projects for Arm devices in general, but it doesn't really know about our board. In order to put programs on a TM4C and run them there are a few other things we need to provide:
 
 ###### [startup.c]()
 This essentially sets up the [NVIC table](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dai0179b/ar01s01s01.html) (table of interrupt handlers), sets up memory, and starts our programs.
@@ -52,7 +52,10 @@ This file also determines the naming convention for interrupt handlers.
 ###### [tm4c.ld]()
 In order for our tools to make programs that we can flash onto our TM4C, they need to know how memory is arranged on our board. This linker script tells `ld.lld` things like how much flash and SRAM we have and where to put things like code and global variables.
 
-There are also a few other files that are provided but those are for convenience and aren't _required_ ([intrinsics.S]() for example).
+###### [gdb-script]()
+A debugger isn't _technically_ required to build and run programs, but it definitely is nice to have. In order to get GDB (a command line debugger) to talk to our TM4C, we have to tell it how to start OpenOCD (a program that facilitates MCU <-> computer communication), which is exactly what `gdb-script` does.
+
+There are also a few other files that are provided but those are for convenience and aren't _required_ ([intrinsics.s]() for example).
 
 As you've probably guessed, this component is _highly_ specific to the TM4C. It'll mostly work with the LM4F too, though with some key exceptions (no PWM peripherals on the LM4F).
 
@@ -61,10 +64,121 @@ As you've probably guessed, this component is _highly_ specific to the TM4C. It'
 Thanks to the previous two components, we have a system that can compile code and assemble binaries and talk to the TM4C. Now we just need something to go and push the right buttons and that's exactly what our build system does.
 
 
+### Installation
 
-### Installation and Usage
+### Usage
+
+##### Files
+Will search for files in the top of the folder and in src/ (for .s, .S, .c, .cpp, .cc, .cxx) and in inc/ (for .h).
+
+##### Targets
+Targets ending in .out build binaries (must contain a main). Targets ending in .a build libraries (we'll call these modules).
+
+##### Two Configurations: one directory and separate module.
+
+###### One Directory
+```
+├── asm
+│   └── intrinsics.s
+├── build.ninja
+├── common.ninja
+├── env
+│   └── Dockerfile
+├── inc
+├── misc
+│   ├── gdb-script
+│   └── tm4c.ld
+└── src
+    ├── main.c
+    └── startup.c
+```
+
+`COMMON_PATH` in build.ninja is set to `.`; `TARGET` is set to `main.out`.
+
+###### Separate Common Directory
+```
+├── common
+│   ├── asm
+│   │   └── intrinsics.s
+│   ├── build.ninja
+│   ├── common.ninja
+│   ├── env
+│   │   └── Dockerfile
+│   ├── inc
+│   ├── misc
+│   │   ├── gdb-script
+│   │   └── tm4c.ld
+│   ├── README.md
+│   └── src
+│       ├── main.c
+│       └── startup.c
+└── proj
+    ├── build.ninja
+    ├── inc
+    └── src
+        └── main.c
+```
+
+`COMMON_PATH` in proj/build.ninja is set to `../common`; `TARGET` is set to `main.out`.
+
+Note that this won't use or even compile the `main.c` in `common/src`.
+
+##### Modules
+
+Additionally, you can use other modules (other projects that are set up to compile a library - `TARGET` ends in .a) by adding the path of the library plus it's name to `MODULES`.
+
+For example, a separate common directory setup with some modules:
+
+```
+├── common
+│   ├── asm
+│   │   └── intrinsics.s
+│   ├── build.ninja
+│   ├── common.ninja
+│   ├── env
+│   │   └── Dockerfile
+│   ├── inc
+│   ├── LICENSE
+│   ├── misc
+│   │   ├── gdb-script
+│   │   └── tm4c.ld
+│   ├── README.md
+│   └── src
+│       ├── main.c
+│       └── startup.c
+├── modules
+│   ├── contrib
+│   │   ├── build.ninja
+│   │   ├── inc
+│   │   │   └── SPI.h
+│   │   └── src
+│   │       └── SPI.c
+│   └── porcelain
+│       ├── build.ninja
+│       ├── inc
+│       │   └── HAL.h
+│       └── src
+│           └── HAL.c
+└── proj
+    ├── build.ninja
+    ├── inc
+    └── src
+        └── main.c
+```
+
+Here contrib and porcelain are both modules. They have `TARGET` in their build.ninja files set to `contrib.a` and `hal.a` respectively. Both have `COMMON` set to `../../common`.
+
+As in the previous example, `COMMON_PATH` in proj/build.ninja is set to `../common`; `TARGET` is set to `main.out`. `MODULES` is set to `../modules/contrib/contrib.a ../modules/porcelain/hal.a` so that `proj/src/main.c` can use functions in `SPI.c` and `HAL.c`.
+
+Note that you can use common (this repo) as a module even if it is also being used as `COMMON` for a project. The only special thing about common is the files it has (intrinsics.s, startup.c, tm4c.ld, gdb-script, common.ninja).
+
+Also note that modules can use other modules. For example, in the above porcelain's build.ninja could have set `MODULES` to `../contrib/contrib.a` so that it could use functions in `SPI.c`.
+
+In a module, it's generally best to name your target the same as your folder name; for example the contrib module above used contrib.a as its target.
 
 ### Examples
+
+TODO: examples branch
 
 ### Features
 
@@ -81,12 +195,15 @@ Thanks to the previous two components, we have a system that can compile code an
 - [x] update-alternatives for llvm/clang tools
 
 ##### Build and Initialization Files
-- [ ] TM4C specific linker script
-- [ ] FPU support
-- [ ] NVIC Table + weak aliases to the default handler
+- [x] TM4C specific linker script
+- [x] GDB script
+- [x] FPU support
+- [x] NVIC Table + weak aliases to the default handler
 - [ ] Heap support (in linker script)
 
 ##### Build System
+- [ ] Support custom common path
+- [ ] Support libraries w/different paths (with the container option)
 - [ ] Compilation Database target (for clangd)
 - [ ] Debug target
 - [ ] Flash targets (flash, run, reset)
@@ -105,3 +222,5 @@ Thanks to the previous two components, we have a system that can compile code an
     * [ ] Get the build system to recognize when it's already running in the container
 - [ ] Install script (native alternative to using the docker container)
 - [ ] Push to Docker Hub
+- [ ] C++ support?
+    * Not sure about this one.
