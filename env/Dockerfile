@@ -32,15 +32,18 @@
 #  - ReservedField's [arm-compiler-rt repo](git.io/fhbX4)
 #  - Maintainers of the newlib-arm-none-eabi packages in the Ubuntu PPAs and in
 #    the AUR (the newlib configure flags are essentially borrowed from them)
+#  - charlie-ht from [this thread](https://git.io/fhNfB) for providing a patch
+#    for ninja's compdb tool that makes it actually emit rules
 #
-# Modified: Feb 25th, 2019
+# Modified: Feb 26th, 2019
 
 
 ARG BASE=ubuntu:18.04
-ARG VERSION=0.1.0
+ARG VERSION=0.2.0
 ARG LLVM_VER=7
 ARG INSTALL_DIR=/usr
 ARG NEWLIB_TAG=newlib-3.1.0
+ARG NINJA_TAG=v1.9.0
 
 # Compiler-RT and friends
 FROM $BASE as libs
@@ -181,7 +184,17 @@ RUN : \
  && git clone https://github.com/ReservedField/arm-compiler-rt \
         --recursive \
  && cd arm-compiler-rt \
- && CC=clang-${LLVM_VER} make -j $(nproc) AR=llvm-ar-${LLVM_VER}
+ && CC=clang-${LLVM_VER} make -j $(nproc) AR=llvm-ar-${LLVM_VER} \
+ && cd ..
+
+ARG NINJA_TAG
+COPY env/compdb.patch compdb.patch
+RUN : \
+ && git clone https://github.com/ninja-build/ninja.git \
+ && cd ninja \
+ && git checkout ${NINJA_TAG} \
+ && git apply ../compdb.patch \
+ && CXX=clang++-${LLVM_VER} ./configure.py --bootstrap
 
 
 FROM $BASE
@@ -197,6 +210,7 @@ LABEL props.base-image=${BASE}
 LABEL props.llvm-version=${LLVM_VER}
 LABEL props.newlib-install-dir=${INSTALL_DIR}
 LABEL props.newlib-version=${NEWLIB_TAG}
+LABEL props.ninja-version=${NINJA_TAG}
 
 ENV VERSION=${VERSION}
 ENV NEWLIB_DIR="${INSTALL_DIR}/newlib"
@@ -205,6 +219,8 @@ ENV NEWLIB_NANO_DIR="${INSTALL_DIR}/newlib-nano"
 COPY --from=libs /opt/arm-compiler-rt/lib /usr/arm-compiler-rt/lib
 COPY --from=libs "${NEWLIB_DIR}" "${NEWLIB_DIR}"
 COPY --from=libs "${NEWLIB_NANO_DIR}" "${NEWLIB_NANO_DIR}"
+COPY --from=libs /opt/ninja/ninja /usr/bin/ninja
+COPY --from=libs /opt/ninja/misc/bash-completion /usr/share/bash-completion/completions/ninja
 
 RUN : \
  && apt-get update -y \
@@ -214,7 +230,14 @@ RUN : \
  && apt-get install -y \
         curl gnupg \
         gdb-multiarch openocd \
-    -qq 2>/dev/null
+    -qq 2>/dev/null \
+ && apt-get clean -y \
+        -qq 2>/dev/null \
+ && apt-get autoremove -y \
+        -qq 2>/dev/null \
+ && rm -rf \
+        /var/tmp/* \
+        /var/lib/apt/lists/*
 
 RUN : \
  && curl https://apt.llvm.org/llvm-snapshot.gpg.key \
@@ -237,7 +260,14 @@ RUN : \
         lldb-${LLVM_VER} \
         libc++-${LLVM_VER}-dev libc++abi-${LLVM_VER}-dev \
         # clang-${LLVM_VER}-doc \
-    -qq 2>/dev/null
+    -qq 2>/dev/null \
+ && apt-get clean -y \
+        -qq 2>/dev/null \
+ && apt-get autoremove -y \
+        -qq 2>/dev/null \
+ && rm -rf \
+        /var/tmp/* \
+        /var/lib/apt/lists/*
 
 ENV C_INCLUDE_PATH="$C_INCLUDE_PATH:${NEWLIB_NANO_DIR}/arm-none-eabi/include"
 ENV LIBRARY_PATH="$LIBRARY_PATH:/usr/arm-compiler-rt/lib/armv7e-m/:${NEWLIB_NANO_DIR}/arm-none-eabi/lib"
@@ -263,12 +293,3 @@ RUN : \
  && alt lldb
 
 WORKDIR /opt/
-
-RUN : \
- && apt-get clean -y \
-        -qq 2>/dev/null \
- && apt-get autoremove -y \
-        -qq 2>/dev/null \
- && rm -rf \
-        /var/tmp/* \
-        /var/lib/apt/lists/*

@@ -190,7 +190,7 @@ TODO: examples branch
 - [x] arm-compiler-rt for intrinsics
 - [x] openocd
 - [x] gdb
-- [ ] ninja
+- [x] ninja
 - [x] clang-tools + clang-format + clang-tidy
 - [x] Clang version + image base + newlib tag as build args
 - [x] update-alternatives for llvm/clang tools
@@ -206,6 +206,7 @@ TODO: examples branch
 - [ ] Support custom common path
 - [ ] Support libraries w/different paths (with the container option)
 - [ ] Compilation Database target (for clangd)
+- [ ] Clang format/tidy targets
 - [ ] Debug target
 - [ ] Flash targets (flash, run, reset)
 - [ ] UART target (screen)
@@ -222,6 +223,7 @@ TODO: examples branch
     * [ ] Add ninja to the container
     * [ ] Get the build system to recognize when it's already running in the container
 - [ ] Install script (native alternative to using the docker container)
-- [ ] Push to Docker Hub
+- [x] Push to Docker Hub (done - with GitHub Actions!)
 - [ ] C++ support?
     * Not sure about this one.
+- [ ] Add a clang format file, maybe
