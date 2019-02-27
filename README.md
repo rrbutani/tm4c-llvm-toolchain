@@ -34,6 +34,7 @@ This is essentially a bundle of the tools we need to build and run projects plus
  - clangd + clang-format + clang-tidy
  - gdb
  - openocd
+ - ninja
  - newlib + newlib nano (libc, libm, libnosys)
  - compiler-rt for Arm (intrinsics used by Clang)
 
@@ -63,7 +64,6 @@ As you've probably guessed, this component is _highly_ specific to the TM4C. It'
 ##### Build System
 
 Thanks to the previous two components, we have a system that can compile code and assemble binaries and talk to the TM4C. Now we just need something to go and push the right buttons and that's exactly what our build system does.
-
 
 ### Installation
 
