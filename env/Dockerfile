@@ -35,11 +35,11 @@
 #  - charlie-ht from [this thread](https://git.io/fhNfB) for providing a patch
 #    for ninja's compdb tool that makes it actually emit rules
 #
-# Modified: Feb 26th, 2019
+# Modified: Feb 27th, 2019
 
 
 ARG BASE=ubuntu:18.04
-ARG VERSION=0.2.0
+ARG VERSION=0.2.1
 ARG LLVM_VER=7
 ARG INSTALL_DIR=/usr
 ARG NEWLIB_TAG=newlib-3.1.0
@@ -279,6 +279,7 @@ RUN : \
 RUN : \
  && alt () { update-alternatives --install /usr/bin/${1} ${1} $(which ${1}-${LLVM_VER}) 1; } \
  && alt clang \
+ && alt clang++ \
  && alt clangd \
  && alt clang-tidy \
  && alt clang-format \
