@@ -1,19 +1,42 @@
 #!/usr/bin/env bash
 
 # Options (arguments):
-NATIVE_OR_DOCKER=${1:-docker} # native or docker
+NATIVE_OR_DOCKER=${1:-docker} # native or docker or hybrid
 TARGET=${2:-proj.out} # .out or .a
 MODULE_STRING=${3:-""} # list of things that end with .a as a string
 COMMON_PATH=${4:-$(dirname $0)/..} # as a default, assumes that this script is in common
 
-# There are really three toolchain configurations: native, docker for tools,
-# and docker for everything. Native involves no containers, docker for tools
-# has ninja running outside the container and everything else running in the
-# container and docker for everything has ninja + everything else running in
-# the container.
+# There are really three toolchain configurations: native, docker for tools
+# (aka hybrid) and docker for everything (aka docker). Native involves no
+# containers, docker for tools has ninja running outside the container and
+# everything else running in the container and docker for everything has
+# ninja + everything else running in the container.
 #
-# As such, native and docker for everything are identical as far as we're
-# concerned (for generating the build.ninja file).
+# As such, native and docker for everything are mostly identical as far as
+# generating build.ninja files is concerned. We will, however, want to do a
+# couple of things like emit helpful aliases for ninja and clangd (aliases
+# that run in the container).
+#
+# The hybrid approach increasingly seems to be a bad approach. Apart from
+# making everything appreciably slower, it causes issues with paths; some
+# commands - especially ninja commands - end up needing to run within the
+# container for paths to be correct and some outside of the container.
+#
+# Additionally, picking mount paths is a headache - with the just docker
+# approach we could fix on a top level path that everything must be in or
+# generate the alias when this script is run since at that point we know
+# how high up we need to go. Since this varies per project perhaps we should
+# spit out an env file..
+#
+# Another fun thing is that whenever ninja runs from the container and then
+# locally, it dumps it's dep file (perhaps because I'm running a different
+# version of ninja outside the container). This isn't a huge deal but it's
+# definitely annoying.
+#
+# I think the hybrid approach is going to be 'best-effort': known not to work
+# for some of the bells and whistles (compdb, graph, dep file dumping) but
+# still available. We should flash a warning when hybrid is chosen in this
+# script.
 
 # $1 : variable name; $2 : default value
 # (note: this sticks things in the global scope! use with caution)

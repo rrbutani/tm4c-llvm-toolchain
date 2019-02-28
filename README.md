@@ -205,6 +205,8 @@ TODO: examples branch
 
 ##### Build System
 - [ ] Support custom common path
+- [ ] LTO support
+- [ ] LTO support for modules
 - [ ] Support libraries w/different paths (with the container option)
 - [ ] Compilation Database target (for clangd)
 - [ ] Clang format/tidy targets
@@ -228,3 +230,4 @@ TODO: examples branch
 - [ ] C++ support?
     * Not sure about this one.
 - [ ] Add a clang format file, maybe
+- [ ] TODO: fix github actions tagging (version)
