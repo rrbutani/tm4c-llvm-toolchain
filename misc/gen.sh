@@ -3,8 +3,8 @@
 # Options (arguments):
 NATIVE_OR_DOCKER=${1:-docker} # native or docker
 TARGET=${2:-proj.out} # .out or .a
-COMMON_PATH=${3:-.}
-MODULE_STRING=${4:-""} # list of things that end with .a as a string
+MODULE_STRING=${3:-""} # list of things that end with .a as a string
+COMMON_PATH=${4:-$(dirname $0)/..} # as a default, assumes that this script is in common
 
 # There are really three toolchain configurations: native, docker for tools,
 # and docker for everything. Native involves no containers, docker for tools
@@ -16,22 +16,12 @@ MODULE_STRING=${4:-""} # list of things that end with .a as a string
 # concerned (for generating the build.ninja file).
 
 # $1 : variable name; $2 : default value
-with_default () { declare $1=${!1-$2}; }
-
-#tests
-assert () { echo $1 == $2; }
-#has declaration:
-foo=yak
-with_default foo other
-assert "$foo" yak
-
-#has no declaration:
-with_default bar nuit
-assert "$bar" nuit
+# (note: this sticks things in the global scope! use with caution)
+with_default () { v="${!1}"; [ -z "$v" ] && v="${2}"; declare -g $1="${v}"; }
 
 # Other options:
-DOCKER="${DOCKER-docker}"
-CONTAINER_NAME=${CONTAINER_NAME-rrbutani/llvm-toolchain}
+with_default DOCKER "docker"
+with_default CONTAINER_NAME "rrbutani/llvm-toolchain"
 
 ###############################################################################
 
@@ -44,8 +34,7 @@ readonly RED='\033[1;31m'
 readonly NC='\033[0m' # No Color
 
 # shellcheck disable=SC2059
-function print
-{
+function print {
     N=0
     n="-e"
 
@@ -65,7 +54,11 @@ function print
 }
 
 # $1 : exit message; $2 : an anchor for the README; $3 : exit code
-error () { print "${1}" ${RED}; print "(https://git.io/fhNW6${3+#}${3:-#usage} has more details and should be able to help)" ${BROWN}; exit ${2:-1}; }
+function error {
+    print "${1}" "${RED}";
+    print "(https://git.io/fhNW6${3+#}${3:-#usage} has more details and should be able to help)" "${BROWN}";
+    exit "${2:-1}";
+}
 
 
 # Check NATIVE_OR_DOCKER:
