@@ -229,5 +229,7 @@ TODO: examples branch
 - [x] Push to Docker Hub (done - with GitHub Actions!)
 - [ ] C++ support?
     * Not sure about this one.
+    * Currently supported, without the C++ stdlib. I think this is a good compromise.
 - [ ] Add a clang format file, maybe
 - [ ] TODO: fix github actions tagging (version)
+- [ ] TODO: add some real CI?

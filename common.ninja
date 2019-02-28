@@ -53,8 +53,9 @@ openocd = openocd
 gdb  = gdb-multiarch
 lldb = lldb
 
-dot = dot
-fmt = clang-format
+dot  = dot
+fmt  = clang-format
+tidy = clang-tidy
 
 builddir = target
 
@@ -116,7 +117,7 @@ gdb_flags =
 lldb_flags =
 
 fmt_flags = $
-    -style=Mozilla
+    -style=Google
 
 # Note: this file is identical between the TM4C and the LM4F
 openocd_flags = $
@@ -134,6 +135,10 @@ libs = $
 ld_search_dirs =
 compiler_rt_dir = /usr/arm-compiler-rt/lib/armv7e-m/fpu
 newlib_dir = /usr/newlib-nano/arm-none-eabi/lib
+
+ninja_browse_flags =
+
+ninja_graph_target =
 
 # Rules:
 
@@ -216,6 +221,7 @@ rule size
   command = $docker_prefix $docker_flags $docker_cntnr $size $
     $size_flags $
     $in
+  description = $mode SIZE $in
   pool = console
 
 rule flash
@@ -255,7 +261,8 @@ rule format
 
 rule browse
   command = $docker_prefix $docker_flags $docker_cntnr ninja $
-      -t browse $in --no-browser
+      -t browse $ninja_browse_flags
+  description = $mode NINJA -t browse
   pool = console
 
 # Intentionally runs ninja in container (if we're running in a container) and
@@ -264,7 +271,7 @@ rule browse
 # with graphviz!).
 rule graph
   command = $docker_prefix $docker_flags $docker_cntnr ninja $
-      -t graph | dot -Tpng > $out
+      -t graph $ninja_graph_target | dot -Tpng > $out
   description = $mode NINJA + DOT > $out
 
 # Once again, this intentionally redirects to a file outside the container. If
@@ -275,4 +282,5 @@ rule compdb
       -t compdb > $out
   description = $mode NINJA -t compdb > $out
 
-
+# TODO:
+#rule uart

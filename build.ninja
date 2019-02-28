@@ -1,7 +1,5 @@
 # A playground
 
-ninja_required_version = 1.4
-
 # Arguments passed to gen.sh; used when regenerating this file.
 gen_args =
 common_dir = .
@@ -19,35 +17,70 @@ cc_opt_level  = $cc_opt_debug
 lto_opt_level = $lto_opt_debug
 
 build $builddir/debug/objs/startup.o: cc src/startup.c
-build $builddir/debug/objs/main.o: cc src/main.c
+build $builddir/debug/objs/yo.o: cc src/yo.c
+build $builddir/debug/objs/main.o: cxx src/main.cpp
 build $builddir/debug/objs/intrinsics.o: as asm/intrinsics.s
 
 build $builddir/debug/$name.out: link $
   $builddir/debug/objs/startup.o $
+  $builddir/debug/objs/yo.o $
   $builddir/debug/objs/main.o $
   $builddir/debug/objs/intrinsics.o
 
-#build $builddir/debug/$name.axf:
+build $builddir/debug/$name.axf: objcopy $builddir/debug/$name.out
 
-build build: phony $builddir/debug/$name.out
+build size: size $builddir/debug/$name.out
+build build: phony $builddir/debug/$name.axf
+
+build flash: flash $builddir/debug/$name.axf
+    docker_flags = $docker_flags --privileged
+build run: start $builddir/debug/$name.axf | flash
+    docker_flags = $docker_flags --privileged
 
 cc_opt_level  = $cc_opt_release
 lto_opt_level = $lto_opt_release
 
 build $builddir/release/objs/startup.o: cc src/startup.c
-build $builddir/release/objs/main.o: cc src/main.c
+build $builddir/release/objs/yo.o: cc src/yo.c
+build $builddir/release/objs/main.o: cxx src/main.cpp
 build $builddir/release/objs/intrinsics.o: as asm/intrinsics.s
 
 build $builddir/release/$name.out: link $
   $builddir/release/objs/startup.o $
+  $builddir/release/objs/yo.o $
   $builddir/release/objs/main.o $
   $builddir/release/objs/intrinsics.o
 
-build build-release: phony $builddir/release/$name.out
+build $builddir/release/$name.axf: objcopy $builddir/release/$name.out
+
+build size-release: size $builddir/release/$name.out
+build build-release: phony $builddir/release/$name.axf
+
+build flash-release: flash $builddir/release/$name.axf
+    docker_flags = $docker_flags --privileged
+build run-release: start $builddir/release/$name.axf | flash-release
+    docker_flags = $docker_flags --privileged
 
 build clean: rm $builddir
 
 build graph.png: graph
+  ninja_graph_target = all
 build graph: phony graph.png
 
 default build
+
+# TODO: should never be run in docker by us
+# Or at least warn about this in the readme
+build browse: browse
+    ninja_browse_flags = -p 8000 -a 0.0.0.0
+    docker_flags = $docker_flags -i -p 8000:8000
+
+# TODO: This _must_ not run in docker (unless ninja is running in docker)
+# actually this depends how clangd works..
+build compile_commands.json: compdb
+build compdb: phony compile_commands.json
+
+# TODO: Only c/cpp files; clang-format will eat asm
+build format: format src/startup.c src/main.c
+
+build all: phony build-release build
