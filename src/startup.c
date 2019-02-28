@@ -3,18 +3,31 @@
  * (Will likely work with other Tiva/Stellaris boards as well)
  *
  * With credit to:
- *     Lukasz Janyst (http:`bit.ly/2pxKw8x)
+ *     Lukasz Janyst (bit.ly/2pxKw8x)
  *     TI's TivaWare
- *     The uctools Project (http://bit.ly/2oIRO9y)
+ *     The uctools Project (bit.ly/2oIRO9y)
  *
  * Author:   Rahul Butani
- * Modified: April 18th, 2017
+ * Modified: February 27th, 2019
  */
 
 // Dependencies:
 #include <stdint.h>
-#include "hw_nvic.h"
-#include "hw_types.h"
+
+// Some preprocessor symbols and macros borrowed from TivaWare so we can avoid
+// having real dependencies:
+
+// From hw_types.h:
+#define HWREG(x) (*((volatile unsigned long *)(x)))
+
+// From hw_nvic.h:
+#define NVIC_CPAC               0xE000ED88  // Coprocessor Access Control
+#define NVIC_CPAC_CP11_M        0x00C00000  // CP11 Coprocessor Access
+                                            // Privilege:
+#define NVIC_CPAC_CP11_FULL     0x00C00000  // Full Access
+#define NVIC_CPAC_CP10_M        0x00300000  // CP10 Coprocessor Access
+                                            // Privilege:
+#define NVIC_CPAC_CP10_FULL     0x00300000  // Full Access
 
 // Prototypes/Declarations:
 void __default_int_handler(void);
@@ -347,7 +360,7 @@ void __default_rst_handler(void)
     // Enable the floating-point unit.  This must be done here to handle the
     // case where main() uses floating-point and the function prologue saves
     // floating-point registers (which will fault if floating-point is not
-    // enabled).  Any configuration of the floating-point unit using DriverLib
+    // enabled). Any configuration of the floating-point unit using DriverLib
     // APIs must be done here prior to the floating-point unit being enabled.
     //
     // Note that this does not use DriverLib since it might not be included in
