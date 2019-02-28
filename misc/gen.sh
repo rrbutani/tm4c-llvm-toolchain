@@ -82,6 +82,15 @@ COMMON_PATH=${4:-$(dirname $0)/..} # as a default, assumes that this script is i
 # it's worth noting that things like compdb aren't going to work right on WSL
 # anyhow - at least not without a path translation patch or having users run
 # their editors in WSL.
+#
+# It's also worth noting the 3rd option will actually perform _better_ since it
+# won't spin up new containers per command. It'll also be easier... I guess
+# we're going to do both! The 3rd option can be docker only (a small lie) and
+# hybrid and native can be their usual selves.
+#
+# The downside is this script get more complicated, this project gets harder to
+# document, and users will have to read through more stuff to understand what's
+# going on.
 
 # $1 : variable name; $2 : default value
 # (note: this sticks things in the global scope! use with caution)
