@@ -1,115 +1,53 @@
-# A simple hand written Ninja file to start with.
+# A playground
 
-ninja_required_version = 1.3
+ninja_required_version = 1.4
 
 # Arguments passed to gen.sh; used when regenerating this file.
 gen_args =
-
 common_dir = .
-builddir = target
 
-module_paths =
+include $common_dir/common.ninja
 
-in_container = docker run $
-    -v .:/opt/project $
-    -it rrbutani/arm-llvm-toolchain
+name = main
+mode = 🐋 $
 
-docker = docker run -t
-mounted_dirs = -v $$(realpath .):/opt/
-container = rrbutani/arm-llvm-toolchain
+docker_prefix = docker run
+docker_flags  = -v $$(realpath .):/opt/ -t
+docker_cntnr  = rrbutani/arm-llvm-toolchain
 
-cc = clang
-ld = ld.lld
-ar = llvm-ar
-
-cflags = $
-    --target=thumbv7em-unknown-none-eabi $
-    -mthumb $
-    -mcpu=cortex-m4 $
-    -mfpu=fpv4-sp-d16 $
-    -mfloat-abi=hard $
-    -ffunction-sections $
-    -fdata-sections $
-    -fno-exceptions $
-    -std=c99 $
-    -Dgcc $
-    -g $
-    -I. $
-    -Iinc/ $
-    -Ideps/inc $
-
-opt_level = 0
-
-linker_script = misc/tm4c.ld
-
-COMPILER_RT = "$$(docker run -t $container bash -c 'echo $${COMPILER_RT_DIR}' | tr -d '\r\n')/armv7e-m"
-NEWLIB_NANO = "$$(docker run -t $container bash -c 'echo $${NEWLIB_NANO_DIR}' | tr -d '\r\n')/arm-none-eabi/lib"
-
-ldflags = $
-    -T ${linker_script} $
-    --gc-sections $
-    -error-limit=0 $
-    --lto-O2 $
-    -lclang_rt.builtins $
-    -lc -lm -lnosys $
-    -lclang_rt.builtins $
-    -L"${COMPILER_RT}/fpu" $
-    -L"${NEWLIB_NANO}"
-
-#rule cc
-#  command = $docker $mounted_dirs $container $cc $cflags -MMD -MT $builddir/objs/$out.o -MF $builddir/deps/$out.d -c $in -o $builddir/objs/$out.o
-#  description = CC $in -> $builddir/objs/$out.o
-#  depfile = $builddir/deps/$out.d
-#  deps = gcc
-#  #dep_path = $builddir/deps/$out.d
-#  #obj_path = $builddir/objs/$out.o
-
-#build startup: cc src/startup.c
-
-rule rm
-  command = rm -rf $in/*
-  description = RM $in
-
-rule echop
-  command = echo $in && touch echo
-  description = ECHO
-
-rule cc
-  command = $docker $mounted_dirs $container $cc $cflags -O${opt_level} -MMD -MT $out -MF $out.d -c $in -o $out
-  description = CC $in -> $out
-  depfile = $out.d
-  deps = gcc
-
-rule asp
-  command = $docker $mounted_dirs $container $cc $cflags -O${opt_level} -MMD -MT $out -MF $out.d -c $in -o $out
-  description = AS w/pre $in -> $out
-  depfile = $out.d
-
-rule ld
-  command = $docker $mounted_dirs $container $ld $in $ldflags -o $out
+cc_opt_level  = $cc_opt_debug
+lto_opt_level = $lto_opt_debug
 
 build $builddir/debug/objs/startup.o: cc src/startup.c
 build $builddir/debug/objs/main.o: cc src/main.c
-build $builddir/debug/objs/intrinsics.o: asp asm/intrinsics.S
-build $builddir/debug/main.out: ld $builddir/debug/objs/startup.o $builddir/debug/objs/intrinsics.o $builddir/debug/objs/main.o
+build $builddir/debug/objs/intrinsics.o: as asm/intrinsics.s
 
-opt_level = 3
+build $builddir/debug/$name.out: link $
+  $builddir/debug/objs/startup.o $
+  $builddir/debug/objs/main.o $
+  $builddir/debug/objs/intrinsics.o
+
+#build $builddir/debug/$name.axf:
+
+build build: phony $builddir/debug/$name.out
+
+cc_opt_level  = $cc_opt_release
+lto_opt_level = $lto_opt_release
+
 build $builddir/release/objs/startup.o: cc src/startup.c
 build $builddir/release/objs/main.o: cc src/main.c
-build $builddir/release/objs/intrinsics.o: asp asm/intrinsics.S
-build $builddir/release/main.out: ld $builddir/release/objs/startup.o $builddir/release/objs/intrinsics.o $builddir/release/objs/main.o
+build $builddir/release/objs/intrinsics.o: as asm/intrinsics.s
 
+build $builddir/release/$name.out: link $
+  $builddir/release/objs/startup.o $
+  $builddir/release/objs/main.o $
+  $builddir/release/objs/intrinsics.o
 
-build $builddir/main-r.out: ld $builddir/objs/startup.o $builddir/objs/intrinsics.o $builddir/objs/main.o
-
-#build echo: echop $builddir/objs/startup.o $builddir/objs/intrinsics.o
-
-build debug: phony $
-    $builddir/debug/main.out
-
-build release: phony $
-    $builddir/release/main.out
-
-default debug release
+build build-release: phony $builddir/release/$name.out
 
 build clean: rm $builddir
+
+build graph.png: graph
+build graph: phony graph.png
+
+default build

@@ -1,0 +1,278 @@
+# Common rules and variables for the TM4C LLVM Toolchain.
+
+# Picking a higher version than is probably necessary to be safe.
+# 1.6 for rule scoping.
+ninja_required_version = 1.6
+
+# Everything here is 'common' amongst all projects that refer to this folder as
+# their common folder.
+#
+# In other words, this file is the right place to specify things we want to
+# keep in sync between all the modules and projects that can interface with
+# each other.
+#
+# build.ninja files should `include` this file (not `subninja` it - this is so
+# that we can specify default values here; when `subninja`-ing, the parent's
+# variables are lowest in the lookup order which means anything we specify here
+# will have precedence over the parent's variables) and should do so _before_
+# they set their own variables (with the except of common_dir). Setting
+# variables after ensures that we can specify _defaults_ here.
+#
+# Though we could have build.ninja files set variables that we use in setting
+# our variables below (by including this file _after_ setting variables), we're
+# going to choose to limit ourselves to only being able to override variables
+# that are in rules; this should be clearer and easier to maintain. As an added
+# bonus, this lets the section below double as a listing of all the variables
+# build.ninja files can override.
+#
+# Note: include exports rules (and everything) to the parent, subninja only
+# exposes build targets. This is really _the_ reason why we're using include for
+# common.ninja.
+
+# Variables:
+# Not all of these are actually initialized here but they are still listed for
+# documentation purposes. This should contain all the variables that
+# build.ninja files downstream can set to influence the behavior of rules from
+# this file.
+
+# 🖥️ | 🐋
+mode = 🖥️ $
+
+# Tools:
+# Note: cc is used for .S files too (assembly w/preprocessor)
+cc  = clang
+as  = clang
+cxx = clang++
+ar  = llvm-ar
+ld  = ld.lld
+
+objcopy = llvm-objcopy
+size    = llvm-size
+openocd = openocd
+
+gdb  = gdb-multiarch
+lldb = lldb
+
+dot = dot
+fmt = clang-format
+
+builddir = target
+
+docker_prefix =
+docker_flags  =
+docker_cntnr  =
+
+linker_script = ${common_dir}/misc/tm4c.ld
+
+cc_opt_level  = 3
+lto_opt_level = 3
+
+# Vars for convenience, not actually used:
+cc_opt_debug   = 0
+cc_opt_release = 3
+
+lto_opt_debug   = 0
+lto_opt_release = 3
+
+# Shared flags between the assembler and C/C++ compilers:
+c_flags = $
+  --target=thumbv7em-unknown-none-eabi $
+    -mthumb $
+    -mcpu=cortex-m4 $
+    -mfpu=fpv4-sp-d16 $
+    -mfloat-abi=hard $
+    -flto
+
+cc_flags = $c_flags $
+    -ffunction-sections $
+    -fdata-sections $
+    -fno-exceptions $
+    -std=c99 $
+    -Dgcc
+
+# TODO: verify
+as_flags = $c_flags
+
+# TODO: verify
+cxx_flags = $c_flags $
+    -ffunction-sections $
+    -fdata-sections $
+    -fno-exceptions $
+    -std=c++17 $
+    -Dgcc
+
+ld_flags = $
+    --gc-sections
+
+ar_flags =
+
+objcopy_flags = $
+    -O binary
+
+size_flags =
+
+gdb_flags =
+
+lldb_flags =
+
+fmt_flags = $
+    -style=Mozilla
+
+# Note: this file is identical between the TM4C and the LM4F
+openocd_flags = $
+    -c "source [find board/ek-tm4c123gxl.cfg]"
+
+header_search_dirs =
+
+libs = $
+    -lclang_rt.builtins $
+    -lc $
+    -lm $
+    -lnosys $
+    -lclang_rt.builtins $
+
+ld_search_dirs =
+compiler_rt_dir = /usr/arm-compiler-rt/lib/armv7e-m/fpu
+newlib_dir = /usr/newlib-nano/arm-none-eabi/lib
+
+# Rules:
+
+# .d (dependency files) will be put in the same directory as the object files,
+# however since they'll be deleted right away (`deps = gcc`) this shouldn't be
+# too much of an annoyance.
+
+# C Compiler
+rule cc
+  command = $docker_prefix $docker_flags $docker_cntnr $cc $
+    $cc_flags $
+    -O${cc_opt_level} $
+    -MMD -MT $out -MF $out.d $
+    $header_search_dirs $
+    -c $in $
+    -o $out
+  description = $mode CC $in -> $out
+  depfile = $out.d
+  deps = gcc
+
+# Assembler without the preprocessor (.s files)
+rule as
+  command = $docker_prefix $docker_flags $docker_cntnr $as $
+    $as_flags $
+    -O${c_opt_level} $
+    -c $in $
+    -o $out
+  description = $mode AS $in -> $out
+
+# Assembler *with* the preprocessor (.S files)
+rule asp
+  command = $docker_prefix $docker_flags $docker_cntnr $cc $
+    $cc_flags $
+    -O${c_opt_level} $
+    -MMD -MT $out -MF $out.d $
+    $header_search_dirs $
+    -c $in $
+    -o $out
+  description = $mode AS (w/preprocessor) $in -> $out
+  depfile = $out.d
+  deps = gcc
+
+rule cxx
+  command = $docker_prefix $docker_flags $docker_cntnr $cxx $
+    $cxx_flags $
+    -O${c_opt_level} $
+    -MMD -MT $out -MF $out.d $
+    $header_search_dirs $
+    -c $in $
+    -o $out
+  description = $mode CXX $in -> $out
+  depfile = $out.d
+  deps = gcc
+
+rule link
+  command = $docker_prefix $docker_flags $docker_cntnr $ld $
+    -T ${linker_script} $
+    $in $
+    ${ld_flags} $
+    --lto-O${lto_opt_level} $
+    ${libs} $
+    ${ld_search_dirs} $
+    -L ${compiler_rt_dir} $
+    -L ${newlib_dir} $
+    -o $out
+  description = $mode LINK $in -> $out
+
+rule ar
+  command = $docker_prefix $docker_flags $docker_cntnr $ar $
+    $ar_flags $
+    rcs $in $out
+
+rule objcopy
+  command = $docker_prefix $docker_flags $docker_cntnr $objcopy $
+    $objcopy_flags $
+    $in $out
+  description = $mode OBJCOPY $in -> $out
+
+rule size
+  command = $docker_prefix $docker_flags $docker_cntnr $size $
+    $size_flags $
+    $in
+  pool = console
+
+rule flash
+  command = $docker_prefix $docker_flags $docker_cntnr $openocd $
+    $openocd_flags $
+    -c "init"                          $
+    -c "reset"                         $
+    -c "halt"                          $
+    -c "flash probe 0"                 $
+    -c "flash write_image erase ${in}" $
+    -c "verify_image ${in}"            $
+    -c "halt"                          $
+    -c "shutdown"
+  description = $mode OPENOCD (flash) $in
+
+rule start
+  command = $docker_prefix $docker_flags $docker_cntnr $openocd $
+    $openocd_flags $
+    -c "init"      $
+    -c "reset run" $
+    -c "shutdown"
+  description = $mode OPENOCD (start) $in
+
+# TODO:
+#rule debug
+#  command = $docker_prefix $docker_flags $docker_cntnr $gdb $
+
+rule rm
+  command = rm -rf $in/*
+  description = RM $in
+
+rule format
+  command = $docker_prefix $docker_flags $docker_cntnr $fmt $
+    $fmt_flags $
+    -i $in
+  description = FMT $in
+
+rule browse
+  command = $docker_prefix $docker_flags $docker_cntnr ninja $
+      -t browse $in --no-browser
+  pool = console
+
+# Intentionally runs ninja in container (if we're running in a container) and
+# dot outside; the container doesn't ship with graphviz (+ ~30MB) so this will
+# only work with native and hybrid configurations (or if you use a container
+# with graphviz!).
+rule graph
+  command = $docker_prefix $docker_flags $docker_cntnr ninja $
+      -t graph | dot -Tpng > $out
+  description = $mode NINJA + DOT > $out
+
+# Once again, this intentionally redirects to a file outside the container. If
+# mounted volumes are configured correctly there shouldn't be a real difference
+# and this saves us from starting up another bash instance.
+rule compdb
+  command = $docker_prefix $docker_flags $docker_cntnr ninja $
+      -t compdb > $out
+  description = $mode NINJA -t compdb > $out
+
+
