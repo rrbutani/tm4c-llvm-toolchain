@@ -137,47 +137,82 @@ function error {
     exit "${2:-1}";
 }
 
+# $@ : strings
+function greatest_common_prefix {
+    local prefix=""
+    local idx=0
+    local char=''
+    declare -a arr=($@)
 
-# Check NATIVE_OR_DOCKER:
-! { [ "${NATIVE_OR_DOCKER}" == "native" ] || [ "${NATIVE_OR_DOCKER}" == "docker" ]; } &&
-    error "Invalid toolchain configuration ($NATIVE_OR_DOCKER); valid options are 'native' and 'docker'."
+    [ "${#arr[@]}" -eq 0 ] && return 1 # We won't deal with empty arrays
 
-# If we're using docker, check that it's installed:
-# (we run `docker images` here instead of just using hash to check that docker
-# permissions are set up right too)
-[ "${NATIVE_OR_DOCKER}" == "docker" ] &&
-    { "${DOCKER}" images > /dev/null 2>&1 ||
-        error "Please make sure docker (${DOCKER}) is installed, configured, and running." 2 "installation"; }
+    while true; do
+        char=${arr[0]:$idx:1} # Believe it or not, this is safe; if we're out of
+                            # chars, the thing in the for loop will catch it
 
-# Check TARGET:
-TARGET_TYPE=
-if [[ "${TARGET}" =~ .*\.a$ ]]; then
-    TARGET_TYPE=lib
-elif [[ "${TARGET}" =~ .*\.out$ ]]; then
-    TARGET_TYPE=bin
-else
-    error "Invalid target (${TARGET})."
-fi
+        for n in "${arr[@]}"; do
+            [ "${idx}" -ge "${#n}" ] && break 2 # If we reach the end of a string, bail
 
-# Check COMMON_PATH:
-declare -a common_files=(common.ninja misc/{gdb-script,tm4c.ld,gen.sh} src/startup.c asm/intrinsics.s)
-for f in "${common_files[@]}"; do
-    [ ! -f "${COMMON_PATH}/$f" ] &&
-        error "Specified common path (${COMMON_PATH}) is missing ${f}."
-done
+            [ ${n:$idx:1} != $char ] && break 2 # If a character doesn't match, bail
+                                                # Yes; this handles the above case too
+                                                # since accessing past the end of a string
+                                                # doesn't throw errors, but it's good to be
+                                                # explicit and I'm not entirely confident
+                                                # bash won't complain about `[ h !=  ]`.
+        done
 
-# Check MODULE_STRING:
-IFS=' ' read -r -a modules <<< "${MODULE_STRING}"
-for mod in "${modules[@]}"; do
-    dir="$(dirname "${mod}")"
-    lib="$(basename "${mod}")"
+        prefix=${prefix}${char}
+        ((idx++))
+    done
 
-    [[ ! "${lib}" =~ .*\.a$ ]] && error "'${mod}' doesn't appear to be a valid module (\`${lib}\` must end with .a)."
+    echo -n "$prefix"
+}
 
-    [ ! -d "${dir}" ] && error "Module '${mod}' doesn't seem to exist."
-    [ ! -f "${dir}/build.ninja" ] && error "Module '${mod}' doesn't seem to have a build.ninja file. Please run \`gen.sh\` in the module."
-    ! grep -q "TARGET = ${lib}" "${dir}/build.ninja" && error "Module '${mod}' doesn't appear to be configured to build '${lib}'."
-done
+function verify_args {
+    # Check NATIVE_OR_DOCKER:
+    ! { [ "${NATIVE_OR_DOCKER}" == "native" ] || [ "${NATIVE_OR_DOCKER}" == "docker" ]; } &&
+        error "Invalid toolchain configuration ($NATIVE_OR_DOCKER); valid options are 'native' and 'docker'."
+
+    # If we're using docker, check that it's installed:
+    # (we run `docker images` here instead of just using hash to check that docker
+    # permissions are set up right too)
+    [ "${NATIVE_OR_DOCKER}" == "docker" ] &&
+        { "${DOCKER}" images > /dev/null 2>&1 ||
+            error "Please make sure docker (${DOCKER}) is installed, configured, and running." 2 "installation"; }
+
+    # Check TARGET:
+    TARGET_TYPE=
+    if [[ "${TARGET}" =~ .*\.a$ ]]; then
+        TARGET_TYPE=lib
+    elif [[ "${TARGET}" =~ .*\.out$ ]]; then
+        TARGET_TYPE=bin
+    else
+        error "Invalid target (${TARGET})."
+    fi
+
+    # Check COMMON_PATH:
+    declare -a common_files=(common.ninja misc/{gdb-script,tm4c.ld,gen.sh} src/startup.c asm/intrinsics.s)
+    for f in "${common_files[@]}"; do
+        [ ! -f "${COMMON_PATH}/$f" ] &&
+            error "Specified common path (${COMMON_PATH}) is missing ${f}."
+    done
+
+    # Check MODULE_STRING:
+    IFS=' ' read -r -a modules <<< "${MODULE_STRING}"
+    for mod in "${modules[@]}"; do
+        dir="$(dirname "${mod}")"
+        lib="$(basename "${mod}")"
+
+        [[ ! "${lib}" =~ .*\.a$ ]] && error "'${mod}' doesn't appear to be a valid module (\`${lib}\` must end with .a)."
+
+        [ ! -d "${dir}" ] && error "Module '${mod}' doesn't seem to exist."
+        [ ! -f "${dir}/build.ninja" ] && error "Module '${mod}' doesn't seem to have a build.ninja file. Please run \`gen.sh\` in the module."
+        { grep -q "target_type = lib" "${dir}/build.ninja" && grep -q "name = $(basename "${lib}" .a)" "${dir}/build.ninja"; }
+            || error "Module '${mod}' doesn't appear to be configured to build '${lib}'."
+    done
+}
+
+verify_args
 
 # TODO: Check if we're on WSL
 

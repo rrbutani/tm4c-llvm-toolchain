@@ -2,9 +2,12 @@
 
 # Arguments passed to gen.sh; used when regenerating this file.
 gen_args =
+target_type = bin
+
 common_dir = .
 
 include $common_dir/common.ninja
+
 
 name = main
 mode = 🐋 $
