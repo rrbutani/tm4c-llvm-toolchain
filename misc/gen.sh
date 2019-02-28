@@ -38,13 +38,58 @@ COMMON_PATH=${4:-$(dirname $0)/..} # as a default, assumes that this script is i
 # still available. We should flash a warning when hybrid is chosen in this
 # script.
 
+# About WSL support: We're not going to be able to (realistically) support
+# using OpenOCD from within a container on Windows (we'd need to either modify
+# the docker-machine VM to have access to the TM4C or we'd need to give the
+# container a way to run windows executables - the way we get OpenOCD to work
+# in WSL is by making a shim that calls the Windows OpenOCD executable;
+# exposing this to the docker-machine VM would require breaking out of a
+# container and then a VM and then _into_ WSL. If we can do the first two
+# things we're already home since we can just run windows executables then. The
+# easiest way to get this to work would be to have an OpenOCD server up and
+# running on the Windows side and then to point the container to that server.
+# However, thanks to the VM - which we can't avoid since most users won't have
+# Windows 10 Pro/Enterprise - this isn't trivial either. So, I think it's best
+# we just accept that WSL + containers + device support is a bad idea.).
+#
+# We can do WSL ('native') + OpenOCD (with the shim). We can have this script
+# set up the shim and yell if WSL folks try to run this script with the docker
+# option (we'll allow it but warn that it's unsupported and won't let users
+# flash their devices).
+#
+# This is basically _why_ the hybrid option exists; running ninja outside the
+# container lets us choose to, for example, run the OpenOCD shim while running
+# all the other tools inside th container. However, as established above, the
+# hybrid option has issues.
+#
+# We have a few options:
+#  - Push for the native option on WSL. This will require creating docs or
+#    scripts for installing the toolchain on WSL, something I desperately don't
+#    want to create and absolutely don't want to maintain.
+#  - Deal with the ugliness of the hybrid approach and push that for WSL users.
+#    Doable but will add some gross logic to this script.
+#  - Use the full docker approach for WSL users but also provide them with the
+#    OpenOCD shim + an alias and a warning that `ninja flash` and friends won't
+#    actually work. Debugging would require additional configuration.
+#  - Keep the hybrid target as is (deprecated, pretty much) and relegate WSL to
+#    second class support.
+#
+# I think I'm going to go with the 2nd approach. Unless clangd proves to be
+# very fickle, it should be okay. But if anything goes wrong, I'll go with the
+# third approach.
+#
+# I'm not going to compromise the experience on Linux/macOS for WSL support and
+# it's worth noting that things like compdb aren't going to work right on WSL
+# anyhow - at least not without a path translation patch or having users run
+# their editors in WSL.
+
 # $1 : variable name; $2 : default value
 # (note: this sticks things in the global scope! use with caution)
 with_default () { v="${!1}"; [ -z "$v" ] && v="${2}"; declare -g $1="${v}"; }
 
 # Other options:
 with_default DOCKER "docker"
-with_default CONTAINER_NAME "rrbutani/llvm-toolchain"
+with_default CONTAINER_NAME "rrbutani/llvm-toolchain:0.2.1"
 
 ###############################################################################
 
