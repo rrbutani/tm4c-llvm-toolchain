@@ -1,6 +1,7 @@
 # A playground
 
 # Arguments passed to gen.sh; used when regenerating this file.
+gen_vars =
 gen_args =
 target_type = bin
 
@@ -120,7 +121,7 @@ build browse: browse
     docker_flags = $docker_flags -i -p 8000:8000
 
 # TODO: This _must_ not run in docker (unless ninja is running in docker)
-# actually this depends how clangd works..
+# actually this depends on how clangd works..
 build compile_commands.json: compdb
 build compdb: phony compile_commands.json
 

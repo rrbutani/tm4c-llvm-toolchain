@@ -107,7 +107,7 @@ with_default ()
 
 # Other options:
 with_default DOCKER "docker"
-with_default CONTAINER_NAME "rrbutani/llvm-toolchain:0.2.1"
+with_default DOCKER_CONTAINER "rrbutani/llvm-toolchain:0.2.1"
 # Be very careful when using these; we don't really check for duplicates.
 # a: assembly w/o preprocessor
 # A: assembly w/preprocessor
@@ -349,10 +349,44 @@ function prelude {
 	EOF
 }
 
+function docker_mount_flags {
+    # $root_dir is mapped to /opt/, in spirit. Literally mounting $root_dir to
+    # /opt/ potentially opens sensitive data to the container. The container
+    # isn't going to do anything nefarious, but still - this is avoidable so
+    # let's avoid it.
+    #
+    # For each path that we have to mount, we have to strip away $root_dir (
+    # rewriting relative to $root_dir does this) and prepend /opt/ (our root
+    # dir). Put an absolute path on the left side and we should be good to go.
+    local paths=(${common_dir} "." "${!modules[@]}")
+
+    for p in "${paths[@]}"; do
+        echo -ne "$\n    -v '$(realpath "$p")':'/opt/$(realpath --relative-to="${root_dir}" "$p")' "
+    done
+
+    # Finally, so that all our lovely relative paths still work we need to go
+    # change the working directory for the container to actually be the project
+    # directory:
+    echo -ne "$\n    -w '/opt/$(realpath --relative-to="${root_dir}" ".")'"
+}
+
+function docker_vars {
+    if [ "${mode}" == "hybrid" ]; then
+        cat <<-EOF >> "${BUILD_FILE}"
+
+		docker_prefix = ${DOCKER} run
+		docker_flags  = -t $(docker_mount_flags)
+		docker_cntnr  = ${DOCKER_CONTAINER}
+
+		EOF
+    fi
+}
+
 help_text "${@}"
 process_args
 adjust_paths
 prelude
+docker_vars
 
 print "target name: \t ${target_name} (${target_type})"
 print "type: \t\t ${mode}"
