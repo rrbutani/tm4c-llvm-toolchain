@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+VERSION=0.2.1
+
 # Options (arguments):
 MODE=${1:-docker} # native or docker or hybrid
 TARGET=${2:-proj.out} # .out or .a
@@ -94,13 +96,28 @@ set -e
 # document, and users will have to read through more stuff to understand what's
 # going on.
 
+
+D=()
+dump_defaults () { for v in "${D[@]}"; do echo -ne "$\n    ${v}='${!v}' "; done; }
+
 # $1 : variable name; $2 : default value
 # (note: this sticks things in the global scope! use with caution)
-with_default () { v="${!1}"; [ -z "$v" ] && v="${2}"; declare -g $1="${v}"; }
+with_default ()
+    { D+=(${1}); v="${!1}"; [ -z "$v" ] && v="${2}"; declare -g $1="${v}"; }
 
 # Other options:
 with_default DOCKER "docker"
 with_default CONTAINER_NAME "rrbutani/llvm-toolchain:0.2.1"
+# Be very careful when using these; we don't really check for duplicates.
+# a: assembly w/o preprocessor
+# A: assembly w/preprocessor
+# c: C source file
+# C: C++ source file
+# / is a stand in for * (glob)
+# | is the separator between globs
+with_default GLOBS "/.s:a|/.S:A|/.c:c|/.cpp:C|/.cc:C|/.cxx:C|"
+with_default FOLDERS "'.' 'src/' 'asm/'"
+with_default BUILD_FILE "build.ninja"
 
 ###############################################################################
 
@@ -108,9 +125,13 @@ with_default CONTAINER_NAME "rrbutani/llvm-toolchain:0.2.1"
 target_type=
 target_name=
 mode=
-declare -A modules
+declare -A modules # [name] -> path
+project_dir=
 common_dir=
 root_dir=
+declare -A globs # [glob] -> language handler function
+declare -a folders
+declare -A objects # [obj name] -> relative path
 
 # Some constants #
 
@@ -228,7 +249,7 @@ function process_args {
             error "Specified common path (${COMMON_PATH}) is missing ${f}."
     done
 
-    common_dir=$(realpath "${COMMON_PATH}")/
+    common_dir="$(realpath "${COMMON_PATH}")/"
 
     # Check MODULE_STRING:
     local module_paths
@@ -240,6 +261,8 @@ function process_args {
         [[ ! "${lib}" =~ .*\.a$ ]] &&
             error "'${mod}' doesn't appear to be a valid module (\`${lib}\` must end with .a)."
 
+        lib="$(basename "${lib}" .a)"
+
         [ ! -d "${dir}" ] &&
             error "Module '${mod}' doesn't seem to exist."
         [ ! -f "${dir}/build.ninja" ] &&
@@ -247,49 +270,107 @@ function process_args {
 
         { { grep -q "target_type = lib$" "${dir}/build.ninja" ||
             { hint="  hint: target_type in '${dir}/build.ninja' should be lib" && false; } } &&
-          { grep -q "name = $(basename "${lib}" .a)$" "${dir}/build.ninja" ||
-            { hint="  hint: name in '${dir}/build.ninja' should be $(basename "${lib}" .a)" && false; } }
+          { grep -q "name = ${lib}$" "${dir}/build.ninja" ||
+            { hint="  hint: name in '${dir}/build.ninja' should be ${lib}" && false; } }
         } || error "Module '${mod}' doesn't appear to be configured to build '${lib}'.""\n${hint}"
 
-        modules["$(realpath "${dir}")/"]="${lib}"
+
+        [ ${modules["${lib}"]+x} ] &&
+            error "Module '${mod}' appears to conflict with the module at '${modules["${lib}"]}'." 2
+
+        modules["${lib}"]="$(realpath "${dir}")/"
     done
+}
+
+# Find the new root path and then rewrite all our paths to be relative to it.
+function adjust_paths {
+    # Some things to note here:
+    #  - We've been careful about putting / at the end of paths so that the
+    #    common prefix of the paths will include / (if there is one at the end
+    #    of the common prefix). This is so that when we call dirname on the path
+    #    (to handle cases like `longest_common_prefix /tmp/foo /tmp/friends` =>
+    #    /tmp/f), we can recognize that the last bit of the path is actually a
+    #    directory and not just common characters in folder names that we need
+    #    to strip (f in the above example).
+    #  - When given a path like /tmp/foo/, dirname will return /tmp. In other
+    #    words, it'll find the containing directory _even_ if it's given a
+    #    directory to being with. This is fine - it just means that in order to
+    #    handle the case where longest_common_prefix gives us back a directory
+    #    (i.e. /tmp/shared/), we need to get dirname to stand down. We do this
+    #    by adding an underscore to longest_common_prefix's output (as shown
+    #    below). For directories (i.e. /tmp/shared/) this is now stripped away
+    #    instead of the last directory; for common characters the underscore is
+    #    stripped away with the common characters (i.e. `dirname /tmp/f_` =>
+    #    /tmp).
+    root_dir=$(dirname \
+      "$(longest_common_prefix "$(realpath .)/" "${common_dir}" "${modules[@]}")_"
+    )
+
+    project_dir="$(realpath --relative-to="${root_dir}" ".")"
+    common_dir="$(realpath --relative-to="." "$common_dir")"
+
+    for mod in "${!modules[@]}"; do
+        modules["${mod}"]="$(realpath --relative-to="." "${modules["${mod}"]}")"
+    done
+}
+
+# function find_source_files {
+#     local 
+#     globs+=('*.c')
+# }
+
+function prelude {
+    cat <<-EOF > "${BUILD_FILE}"
+		# Build file for $target_name ($target_type)
+
+		# Careful! This file was autogenerated (on $(date +"%B %d, %Y %I:%M %p") by version $VERSION of \`gen.sh\`).
+		# If you need to make changes, consider running \`gen.sh\` again (see below for
+		# the arguments it was called with) with different arguments/env vars or running
+		# \`ninja regenerate\`. See https://git.io/fhNW6#usage for help.
+
+		common_dir = ${common_dir}
+
+		include \$common_dir/common.ninja
+
+		# Arguments passed to gen.sh; used when regenerating this file.
+		gen_vars = $(dump_defaults)
+		gen_args = $
+		    '${MODE}' $
+		    '${TARGET}' $
+		    '${MODULE_STRING}' $
+		    '${COMMON_PATH}'
+
+		target_type = ${target_type}
+		name = ${target_name}
+
+		build build.ninja: regenerate
+		build regenerate: regenerate
+
+	EOF
 }
 
 help_text "${@}"
 process_args
+adjust_paths
+prelude
 
 print "target name: \t ${target_name} (${target_type})"
 print "type: \t\t ${mode}"
 print "common dir: \t ${common_dir}"
-print "modules: \t ${modules[*]}"
-# for p in "${!modules[@]}"; do
-#     echo "${p} -> ${modules[$p]}"
-# done
+print "modules: \t ${!modules[*]}"
+for p in "${!modules[@]}"; do
+    echo "${p} -> ${modules[$p]}"
+done
 
-# Some things to note here:
-#  - We've been careful about putting / at the end of paths so that the common
-#    prefix of the paths will include / (if there is one at the end of the
-#    common prefix). This is so that when we call dirname on the path (to handle
-#    cases like `longest_common_prefix /tmp/foo /tmp/friends` => /tmp/f), we can
-#    recognize that the last bit of the path is actually a directory and not
-#    just common characters in folder names that we need to strip (f in the
-#    above example).
-#  - When given a path like /tmp/foo/, dirname will return /tmp. In other words,
-#    it'll find the containing directory _even_ if it's given a directory to
-#    being with. This is fine - it just means that in order to handle the case
-#    where longest_common_prefix gives us back a directory (i.e. /tmp/shared/),
-#    we need to get dirname to stand down. We do this by adding an underscore to
-#    longest_common_prefix's output (as shown below). For directories (i.e.
-#    /tmp/shared/) this is now stripped away instead of the last directory; for
-#    common characters the underscore is stripped away with the common
-#    characters (i.e. `dirname /tmp/f_` => /tmp).
-root_dir=$(dirname \
-  "$(longest_common_prefix "$(realpath .)/" "${common_dir}" "${!modules[@]}")_"
-)
+
+# I know, I know, but shhh
+🐋() { echo 🐋; }
 
 print "$(longest_common_prefix "$(realpath .)/" "${common_dir}" "${!modules[@]}")"
 print "new root dir = $root_dir" $PURPLE
 
+
+
+print 🐋 $CYAN
+
 # TODO: Check if we're on WSL
-
-

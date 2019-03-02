@@ -70,7 +70,7 @@ Thanks to the previous two components, we have a system that can compile code an
 ### Usage
 
 ##### Files
-Will search for files in the top of the folder and in src/ (for .s, .S, .c, .cpp, .cc, .cxx) and in inc/ (for .h).
+By default, will search for files in the top of the folder and in src/ (for .c, .cpp, .cc, .cxx) and in the top and asm/ (for .s, .S). Include paths are set to inc/ and the top of the folder (.h files).
 
 ##### Targets
 Targets ending in .out build binaries (must contain a main). Targets ending in .a build libraries (we'll call these modules).
@@ -204,7 +204,8 @@ TODO: examples branch
 - [ ] Heap support (in linker script)
 
 ##### Build System
-- [ ] Support custom common path
+- [x] Support custom common path
+- [x] Target to regenerate build.ninja
 - [ ] LTO support
 - [ ] LTO support for modules
 - [ ] Support libraries w/different paths (with the container option)

@@ -141,8 +141,8 @@ ninja_browse_flags =
 ninja_graph_target =
 
 # Arguments/flags passed to gen.sh; used when regenerating build.ninja.
+gen_vars =
 gen_args =
-gen_flags =
 
 # Rules:
 
@@ -291,7 +291,8 @@ rule compdb
 
 rule regenerate
   command = $docker_prefix $docker_flags $docker_cntnr bash -c "$
-    $gen_flags $
-    \"${common_dir}/misc/gen.sh\" $
+    $gen_vars $
+    ${common_dir}/misc/gen.sh $
     $gen_args"
-  description = $mode GEN $
+  description = $mode GEN
+  generator = 1
