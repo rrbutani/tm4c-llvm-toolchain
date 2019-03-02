@@ -63,7 +63,7 @@ docker_prefix =
 docker_flags  =
 docker_cntnr  =
 
-linker_script = ${common_dir}/misc/tm4c.ld
+linker_script = "${common_dir}/misc/tm4c.ld"
 
 cc_opt_level  = 3
 lto_opt_level = 3
@@ -139,6 +139,10 @@ newlib_dir = /usr/newlib-nano/arm-none-eabi/lib
 ninja_browse_flags =
 
 ninja_graph_target =
+
+# Arguments/flags passed to gen.sh; used when regenerating build.ninja.
+gen_args =
+gen_flags =
 
 # Rules:
 
@@ -249,6 +253,9 @@ rule start
 #rule debug
 #  command = $docker_prefix $docker_flags $docker_cntnr $gdb $
 
+# TODO:
+#rule uart
+
 rule rm
   command = rm -rf $in/*
   description = RM $in
@@ -261,7 +268,7 @@ rule format
 
 rule browse
   command = $docker_prefix $docker_flags $docker_cntnr ninja $
-      -t browse $ninja_browse_flags
+    -t browse $ninja_browse_flags
   description = $mode NINJA -t browse
   pool = console
 
@@ -271,7 +278,7 @@ rule browse
 # with graphviz!).
 rule graph
   command = $docker_prefix $docker_flags $docker_cntnr ninja $
-      -t graph $ninja_graph_target | dot -Tpng > $out
+     -t graph $ninja_graph_target | dot -Tpng > $out
   description = $mode NINJA + DOT > $out
 
 # Once again, this intentionally redirects to a file outside the container. If
@@ -279,8 +286,12 @@ rule graph
 # and this saves us from starting up another bash instance.
 rule compdb
   command = $docker_prefix $docker_flags $docker_cntnr ninja $
-      -t compdb > $out
+    -t compdb > $out
   description = $mode NINJA -t compdb > $out
 
-# TODO:
-#rule uart
+rule regenerate
+  command = $docker_prefix $docker_flags $docker_cntnr bash -c "$
+    $gen_flags $
+    \"${common_dir}/misc/gen.sh\" $
+    $gen_args"
+  description = $mode GEN $
