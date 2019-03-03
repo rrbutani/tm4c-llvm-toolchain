@@ -98,7 +98,7 @@ set -e
 
 
 D=()
-dump_defaults () { for v in "${D[@]}"; do echo -ne "$\n    ${v}='${!v}' "; done; }
+dump_defaults () { for v in "${D[@]}"; do echo -ne "$\n  ${v}='${!v}' "; done; }
 
 # $1 : variable name; $2 : default value
 # (note: this sticks things in the global scope! use with caution)
@@ -107,7 +107,7 @@ with_default ()
 
 # Other options:
 with_default DOCKER "docker"
-with_default DOCKER_CONTAINER "rrbutani/llvm-toolchain:0.2.1"
+with_default DOCKER_CONTAINER "rrbutani/arm-llvm-toolchain" # TODO: version tag
 # Be very careful when using these; we don't really check for duplicates.
 # a: assembly w/o preprocessor
 # A: assembly w/preprocessor
@@ -203,6 +203,19 @@ function longest_common_prefix {
     done
 
     echo -n "$prefix"
+}
+
+# $1 : some string
+function ninja_escaped_string {
+	local out=""
+
+	for i in $(seq 0 $((${#1}-1))); do
+		char=${1:$i:1}
+		[ "${char}" == ' ' ] && out="${out}$"
+		out="${out}${char}"
+	done
+
+	echo -n "$out"
 }
 
 function help_text {
@@ -391,10 +404,10 @@ function prelude {
 		# Arguments passed to gen.sh; used when regenerating this file.
 		gen_vars = $(dump_defaults)
 		gen_args = $
-		    '${MODE}' $
-		    '${TARGET}' $
-		    '${MODULE_STRING}' $
-		    '${COMMON_PATH}'
+		  '${MODE}' $
+		  '${TARGET}' $
+		  '${MODULE_STRING}' $
+		  '${COMMON_PATH}'
 
 		target_type = ${target_type}
 		name = ${target_name}
@@ -414,13 +427,13 @@ function docker_mount_flags {
     local paths=(${common_dir} "." "${!modules[@]}")
 
     for p in "${paths[@]}"; do
-        echo -ne "$\n    -v '$(realpath "$p")':'/opt/$(realpath --relative-to="${root_dir}" "$p")' "
+        echo -ne "$\n  -v '$(realpath "$p")':'/opt/$(realpath --relative-to="${root_dir}" "$p")' "
     done
 
     # Finally, so that all our lovely relative paths still work we need to go
     # change the working directory for the container to actually be the project
     # directory:
-    echo -ne "$\n    -w '/opt/$(realpath --relative-to="${root_dir}" ".")'"
+    echo -ne "$\n  -w '/opt/$(realpath --relative-to="${root_dir}" ".")'"
 }
 
 function docker_vars {
@@ -430,34 +443,84 @@ function docker_vars {
 		docker_prefix = ${DOCKER} run
 		docker_flags  = -t $(docker_mount_flags)
 		docker_cntnr  = ${DOCKER_CONTAINER}
-
 		EOF
     fi
 }
 
-function conclusion {
-	local files_to_format=$(
-		for f in "${object_paths[@]}"; do
-			{ [[ $f =~ .*\.s$ ]] ||
-			  [[ $f =~ .*\.S$ ]] ||
-		  	  [[ $f =~ ^\${common_dir}.* ]]; } ||
-		  	    echo -ne " $\n    '${f}'"
-		  		# files_to_format="$files_to_format $"'\n'"'${f}'"
-		done
-	)
+# $1 : build type (i.e. debug, release, etc.)
+# These must exist in common.ninja (opt levels)
+function body {
+    local build_type="${1}"
 
-	local browse_docker_flags
-
-	# shellcheck disable=SC2016
-	if [ "${mode}" == "hybrid" ]; then
-		browse_docker_flags='docker_flags = $docker_flags -i -p 8000:8000'
-	fi
+    local docker_flags
+    # shellcheck disable=SC2016
+    if [ "${mode}" == "hybrid" ]; then
+        docker_flags='docker_flags = $docker_flags --privileged'
+    fi
 
     cat <<-EOF >> "${BUILD_FILE}"
+
+	# Build Type: ${build_type}
+
+	cc_opt_level  = \$cc_opt_${build_type}
+	lto_opt_level = \$lto_opt_${build_type}
+
+	# TODO: OBJS, LINK
+
+	build \$builddir/${build_type}/\$name.axf: objcopy \$builddir/${build_type}/\$name.out
+
+	build size-${build_type}: size \$builddir/${build_type}/\$name.out
+	build build-${build_type}: phony \$builddir/${build_type}/\$name.axf
+
+	build flash-${build_type}: flash \$builddir/${build_type}/\$name.axf
+	    ${docker_flags}
+	build run-${build_type}: start \$builddir/${build_type}/\$name.axf | flash-${build_type}
+	    ${docker_flags}
+	EOF
+}
+
+# $1 : default build type (i.e. debug, release, etc.)
+function conclusion {
+    local files_to_format=$(
+        for f in "${object_paths[@]}"; do
+            { [[ $f =~ .*\.s$ ]] ||
+              [[ $f =~ .*\.S$ ]] ||
+              [[ $f =~ ^\${common_dir}.* ]]; } ||
+                echo -ne " $\n  $(ninja_escaped_string "${f}")"
+                # echo -ne " $\n  '${f}'"
+        done
+    )
+
+    local browse_docker_flags
+    local regen_docker_flags
+
+    # shellcheck disable=SC2016
+    if [ "${mode}" == "hybrid" ]; then
+        browse_docker_flags='docker_flags = $docker_flags -i -p 8000:8000'
+        regen_docker_flags=$(
+        	echo "    docker_prefix ="
+        	echo "    docker_flags ="
+        	echo "    docker_cntnr ="
+        )
+    fi
+
+    local build_type="${1}"
+
+    cat <<-EOF >> "${BUILD_FILE}"
+
+		# And finally:
+
+		build size: phony size-${build_type}
+		build build: phony build-${build_type}
+		build flash: phony flash-${build_type}
+		build run: phony run-${build_type}
+
 		build clean: rm \$builddir
 
 		build graph.png: graph
 		  ninja_graph_target = all
+
+		build graph: phony graph.png
 
 		# TODO: warning about running this in docker for hybrid confs
 		build browse: browse
@@ -470,18 +533,20 @@ function conclusion {
 
 		build format: format${files_to_format[@]}
 
-		build build.ninja: regenerate
 		build regenerate: regenerate
+		${regen_docker_flags}
+		build build.ninja: regenerate | \$common_dir/common.ninja
+		${regen_docker_flags}
 
-		build all: phony build-release build
+		build all: phony build-release build-debug
 
 		default build
 	EOF
 }
 
 function fini {
-	: # TODO:
-	# If docker, give aliases.
+    : # TODO:
+    # If docker, give aliases.
 }
 
 help_text "${@}"
@@ -490,7 +555,9 @@ adjust_paths
 find_source_files
 prelude
 docker_vars
-conclusion
+body "debug"
+body "release"
+conclusion "release"
 fini
 
 print "target name: \t ${target_name} (${target_type})"

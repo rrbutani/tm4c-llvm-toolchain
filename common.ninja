@@ -214,6 +214,7 @@ rule ar
   command = $docker_prefix $docker_flags $docker_cntnr $ar $
     $ar_flags $
     rcs $in $out
+  description = $mode AR $in -> $out
 
 rule objcopy
   command = $docker_prefix $docker_flags $docker_cntnr $objcopy $
@@ -264,7 +265,7 @@ rule format
   command = $docker_prefix $docker_flags $docker_cntnr $fmt $
     $fmt_flags $
     -i $in
-  description = FMT $in
+  description = $mode FMT $in
 
 rule browse
   command = $docker_prefix $docker_flags $docker_cntnr ninja $
