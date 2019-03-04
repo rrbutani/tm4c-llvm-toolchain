@@ -40,7 +40,7 @@ void __default_rst_handler(void);
 // This allows us to define proper strongly defined interrupt handlers
 // anywhere in the project and have them override the default interrupt
 // handler (taken care of by the linker) without us having to edit this file.
-#define DEFINE_HANDLER(NAME) void NAME ## _handler() __attribute__ ((weak, alias ("__default_int_handler")))
+#define DEFINE_HANDLER(NAME) void NAME ## _handler() __attribute__ ((used, weak, alias ("__default_int_handler")))
 
 // Macro to generate function name of an aliased placeholder interrupt.
 // (Generating these allows us to avoid hardcoding the function names)
@@ -50,7 +50,7 @@ void __default_rst_handler(void);
 // Define weakly aliased interrupt handlers:
 
 // Reset is a special case:
-void reset_handler() __attribute__ ((weak, alias ("__default_rst_handler")));
+void reset_handler() __attribute__ ((used, weak, alias ("__default_rst_handler")));
 
 DEFINE_HANDLER(nmi);
 DEFINE_HANDLER(hard_fault);
@@ -144,7 +144,7 @@ DEFINE_HANDLER(pwm1_fault);
 
 // The Nested Vectored Interrupt Controller (NVIC) Table:
 // Mark with .nvic_table (as in the linker script) so it'll be placed correctly
-void(* nvic_table[])(void) __attribute__ ((section (".nvic_table"))) =
+void(* nvic_table[])(void) __attribute__ ((used, section (".nvic_table"))) =
 {
     HANDLER(reset),         // The reset handler
     HANDLER(nmi),           // The NMI handler
@@ -371,6 +371,10 @@ void __default_rst_handler(void)
                         NVIC_CPAC_CP10_FULL | NVIC_CPAC_CP11_FULL);
 
     // Call main (start the program)!
-    main();
+    // Disgusting hacks to get LTO to behave until we have a better way:
+    volatile int i = 1;
+    while (i) { main(); i=0; }
+
+    nvic_table[i]();
 }
 
