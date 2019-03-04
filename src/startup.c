@@ -8,7 +8,7 @@
  *     The uctools Project (bit.ly/2oIRO9y)
  *
  * Author:   Rahul Butani
- * Modified: February 27th, 2019
+ * Modified: March 4th, 2019
  */
 
 // Dependencies:
@@ -371,10 +371,6 @@ void __default_rst_handler(void)
                         NVIC_CPAC_CP10_FULL | NVIC_CPAC_CP11_FULL);
 
     // Call main (start the program)!
-    // Disgusting hacks to get LTO to behave until we have a better way:
-    volatile int i = 1;
-    while (i) { main(); i=0; }
-
-    nvic_table[i]();
+    main();
 }
 
