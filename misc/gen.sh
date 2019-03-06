@@ -154,7 +154,7 @@ with_default ()
 
 # Other options:
 with_default DOCKER "docker"
-with_default DOCKER_CONTAINER "rrbutani/arm-llvm-toolchain" # TODO: version tag
+with_default DOCKER_CONTAINER "rrbutani/arm-llvm-toolchain:0.2.1"
 # Be very careful when using these; we don't really check for duplicates.
 # a: assembly w/o preprocessor
 # A: assembly w/preprocessor
@@ -546,7 +546,15 @@ function body {
 	cc_opt_level  = \$cc_opt_${build_type}
 	lto_opt_level = \$lto_opt_${build_type}
 
-	# TODO: OBJS, LINK
+	$(for obj in "${!object_paths[@]}"; do
+		echo "build $(ninja_escaped_string "\$builddir/${build_type}/objs/${obj}"): $(${object_functions["${obj}"]}) $(ninja_escaped_string "${object_paths["${obj}"]}")"
+	done)
+
+	build \$builddir/${build_type}/\$name.out: link$(
+		for obj in "${!object_paths[@]}"; do
+			echo -ne " $\n  $(ninja_escaped_string "\$builddir/${build_type}/objs/${obj}")"
+		done
+	)
 
 	build \$builddir/${build_type}/\$name.axf: objcopy \$builddir/${build_type}/\$name.out
 
@@ -625,9 +633,25 @@ function conclusion {
 	EOF
 }
 
+# I know, I know, but shhh
+🐋() { echo 🐋; }
+
 function fini {
     : # TODO:
     # If docker, give aliases.
+
+    print "target name: \t ${target_name} (${target_type})"
+	print "type: \t\t ${mode}"
+	print "common dir: \t ${common_dir}"
+	print "modules: \t ${!modules[*]}"
+	for p in "${!modules[@]}"; do
+	    echo "${p} -> ${modules[$p]}"
+	done
+
+	print "$(longest_common_prefix "$(realpath .)/" "${common_dir}" "${!modules[@]}")"
+	print "new root dir = $root_dir" $PURPLE
+
+	print "🐋 ($project_dir)" $CYAN
 }
 
 help_text "${@}"
@@ -640,24 +664,5 @@ body "debug"
 body "release"
 conclusion "release"
 fini
-
-print "target name: \t ${target_name} (${target_type})"
-print "type: \t\t ${mode}"
-print "common dir: \t ${common_dir}"
-print "modules: \t ${!modules[*]}"
-for p in "${!modules[@]}"; do
-    echo "${p} -> ${modules[$p]}"
-done
-
-
-# I know, I know, but shhh
-🐋() { echo 🐋; }
-
-print "$(longest_common_prefix "$(realpath .)/" "${common_dir}" "${!modules[@]}")"
-print "new root dir = $root_dir" $PURPLE
-
-
-
-print 🐋 $CYAN
 
 # TODO: Check if we're on WSL
