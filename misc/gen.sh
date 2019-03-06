@@ -96,6 +96,54 @@ set -e
 # document, and users will have to read through more stuff to understand what's
 # going on.
 
+# More fun path stuff: It turns out subninja doesn't do any kind of path
+# remapping and has no "working directory" concept. If I were to subninja a
+# build file from some other directory, it wouldn't run in that directory.
+# Instead it would run in the parent ninja file's directory. Since we decided
+# to use relative paths for everything, this means that the subninja-ed file's
+# targets wouldn't work. More here: github.com/ninja-build/ninja/issues/977
+#
+# We have a few options:
+#  - One is to use absolute paths for _everything_ so that subninja'd files
+#    work. I don't really like this option because it makes generated ninja
+#    files specific to the system they're generated on:
+#     * I still haven't decided whether it's best to not commit build.ninja
+#       files to repos at all, but right now it's conceivable that users using
+#       the same configuration - i.e. docker or native for everyone - could just
+#       commit their build files. If we use absolute paths this isn't at all
+#       possible. Eventually, we'll probably move to some kind of structured way
+#       to record the args passed to gen and to actually invoke gen - perhaps
+#       another ninja file - and then we can check that in to repos instead of
+#       build.ninja files.
+#   Another thing worth noting is that right now, because of the relative path
+#   stuff, a generated build.ninja file can be used within a container (docker)
+#   and also natively (native and hybrid). This is nice and also means we can
+#   have user specific stuff (like mode) reside in some other ninja file that
+#   doesn't get checked into version control (config.ninja, perhaps).
+#   Using absolute paths also increases the scenarios for which you'd need to
+#   rerun gen (moving the directory for example).
+# - Another option is to do things the make way and just invoke ninja again on
+#   the module's ninja file (`ninja -C <dir of module> -f <build.ninja file>).
+#   Downsides to this are that it's a little gross and it isn't really the ninja
+#   _way_. For example, the build graph won't show targets in other modules and
+#   compdb won't add entries for files in other modules. It's really just a
+#   shame since there's a feature (subninja) that does almost exactly what we
+#   want. On the other hand, I'm not actually sure subninja and graph/compdb
+#   would have worked how I described above so maybe it's a moot point.
+# - A third option is to make all paths 'absolute' with respect to some root
+#   directory and then to call ninja with -C. This has similar downsides as the
+#   first option but manages to retain docker/native compatibility. The big new
+#   downside here is that ninja needs to be aliased on the host side for native.
+#   Additionally the points about build.ninja files becoming very machine
+#   specific still stand.
+#
+# I'm going to go with the second option. compdb and graph support would be nice
+# but I think this is an acceptable tradeoff, though it does mean that modules
+# probably aren't the right thing for project structure (i.e. it's probably not
+# the best idea to break out part off a project that isn't a 'library' into a
+# module for the sake of organization - this was kind of already true though for
+# linking/LTO reasons; not sure if/how LTO and bitcode work with archives).
+
 D=()
 dump_defaults () { for v in "${D[@]}"; do echo -ne "$\n  ${v}='${!v}' "; done; }
 
