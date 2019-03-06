@@ -145,7 +145,7 @@ set -e
 # linking/LTO reasons; not sure if/how LTO and bitcode work with archives).
 
 D=()
-dump_defaults () { for v in "${D[@]}"; do echo -ne "$\n  ${v}='${!v}' "; done; }
+dump_defaults () { for v in "${D[@]}"; do echo -ne " $\n  ${v}='${!v}'"; done; }
 
 # $1 : variable name; $2 : default value
 # (note: this sticks things in the global scope! use with caution)
@@ -245,7 +245,7 @@ function longest_common_prefix {
                 # Or if a character doesn't match:
                 # (Note: we need the above case too because bash will throw
                 # errors for `[ h !=  ]`)
-                [ ${n:$idx:1} != $char ];
+                [ "${n:$idx:1}" != "$char" ];
             } && break 2
         done
 
@@ -272,7 +272,7 @@ function ninja_escaped_string {
 function help_text {
     for arg in "${@}"; do
         [ "$arg" == "--help" ] && {
-            print "Usage: $0 [toolchain mode] [target] [modules] [common dir]" $BOLD
+            print "Usage: $0 [toolchain mode] [target] [modules] [common dir]" "$BOLD"
             error "" 1 "usage"
         }
     done
@@ -340,11 +340,19 @@ function process_args {
         } || error "Module '${mod}' doesn't appear to be configured to build '${lib}'.""\n${hint}"
 
 
-        [ ${modules["${lib}"]+x} ] &&
+        [ "${modules["${lib}"]+x}" ] &&
             error "Module '${mod}' appears to conflict with the module at '${modules["${lib}"]}'." 2
 
         modules["${lib}"]="$(realpath "${dir}")/"
     done
+
+    # Process Include Dirs:
+    declare -a -g "include_dirs=(${INCLUDE_DIRS})"
+    for inc_dir in "${include_dirs[@]}"; do
+    	# Warn but don't error out:
+    	[ ! -d "${inc_dir}" ] &&
+    		print "Warning: include directory \`${inc_dir}\` doesn't exist." "${BROWN}"
+	done
 }
 
 # Find the new root path and then rewrite all our paths to be relative to it.
@@ -371,11 +379,16 @@ function adjust_paths {
       "$(longest_common_prefix "$(realpath .)/" "${common_dir}" "${modules[@]}")_"
     )
 
-    project_dir="$(realpath --relative-to="${root_dir}" ".")"
+    # project_dir="$(realpath --relative-to="${root_dir}" ".")"
     common_dir="$(realpath --relative-to="." "$common_dir")"
 
     for mod in "${!modules[@]}"; do
         modules["${mod}"]="$(realpath --relative-to="." "${modules["${mod}"]}")"
+    done
+
+    # Include dirs:
+    for ((i = 0; i < "${#include_dirs[@]}"; i++)); do
+    	include_dirs[$i]="$(realpath --relative-to="." "${include_dirs[$i]}")/"
     done
 }
 
@@ -431,12 +444,6 @@ function find_source_files {
     unset IFS
 }
 
-function process_include_dirs {
-	declare -a -g "include_dirs=(${INCLUDE_DIRS})"
-
-	for i in "${include_dirs[@]}"; do echo $i; done
-}
-
 # $1 : Environment variable to print
 docker_var () { "${DOCKER}" run -t "${DOCKER_CONTAINER}" bash -c "echo \${$1}" | tr -d '\r\n'; }
 
@@ -468,7 +475,7 @@ function prelude {
 		include \$common_dir/common.ninja
 
 		# Arguments passed to gen.sh; used when regenerating this file.
-		gen_vars = $(dump_defaults)
+		gen_vars =$(dump_defaults)
 		gen_args = $
 		  '${MODE}' $
 		  '${TARGET}' $
@@ -481,6 +488,11 @@ function prelude {
 
 		compiler_rt_dir = ${COMPILER_RT_DIR}
 		newlib_dir = ${NEWLIB_DIR}
+
+		header_search_dirs =$(
+		for dir in "${include_dirs[@]}"; do
+			echo -ne " $\n  -I$dir"
+		done)
 	EOF
 }
 
@@ -622,7 +634,6 @@ help_text "${@}"
 process_args
 adjust_paths
 find_source_files
-process_include_dirs
 prelude
 docker_vars
 body "debug"
