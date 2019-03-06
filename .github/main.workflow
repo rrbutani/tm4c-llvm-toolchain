@@ -1,6 +1,11 @@
 workflow "Build toolchain container and push to Docker Hub" {
   on = "push"
-  resolves = ["Build toolchain container", "Log into Docker Hub", "Tag toolchain container", "Push to Docker Hub"]
+  resolves = [
+    "Log into Docker Hub",
+    "Push to Docker Hub",
+    "Tag toolchain container",
+    "Tag with version",
+  ]
 }
 
 action "Build toolchain container" {
@@ -22,6 +27,15 @@ action "Tag toolchain container" {
 
 action "Push to Docker Hub" {
   uses = "actions/docker/cli@8cdf801b322af5f369e00d85e9cf3a7122f49108"
-  needs = ["Tag toolchain container"]
+  needs = [
+    "Tag toolchain container",
+    "Tag with version",
+  ]
   args = "push rrbutani/arm-llvm-toolchain"
+}
+
+action "Tag with version" {
+  uses = "docker://rrbutani/docker-version-tag"
+  needs = ["Build toolchain container"]
+  args = "arm-llvm-toolchain rrbutani/arm-llvm-toolchain env/Dockerfile"
 }
