@@ -96,7 +96,6 @@ set -e
 # document, and users will have to read through more stuff to understand what's
 # going on.
 
-
 D=()
 dump_defaults () { for v in "${D[@]}"; do echo -ne "$\n  ${v}='${!v}' "; done; }
 
@@ -117,6 +116,9 @@ with_default DOCKER_CONTAINER "rrbutani/arm-llvm-toolchain" # TODO: version tag
 # | is the separator between globs
 with_default GLOBS "%.s:a|%.S:A|%.c:c|%.cpp:C|%.cc:C|%.cxx:C|"
 with_default FOLDERS "'.' 'src' 'asm'"
+with_default INCLUDE_DIRS "'.' 'inc'"
+with_default COMPILER_RT_DIR "/usr/arm-compiler-rt/lib/armv7e-m/fpu"
+with_default NEWLIB_DIR "/usr/newlib-nano/arm-none-eabi/lib"
 with_default BUILD_FILE "build.ninja"
 
 ###############################################################################
@@ -133,6 +135,7 @@ declare -A globs # [glob] -> language handler function
 declare -a folders
 declare -A object_paths # [obj name] -> relative path
 declare -A object_functions # [obj name] -> handler function
+declare -a include_dirs
 
 # Some constants #
 
@@ -380,6 +383,15 @@ function find_source_files {
     unset IFS
 }
 
+function process_include_dirs {
+	declare -a -g "include_dirs=(${INCLUDE_DIRS})"
+
+	for i in "${include_dirs[@]}"; do echo $i; done
+}
+
+# $1 : Environment variable to print
+docker_var () { "${DOCKER}" run -t "${DOCKER_CONTAINER}" bash -c "echo \${$1}" | tr -d '\r\n'; }
+
 function prelude {
     local mode_symbol=❓
 
@@ -387,6 +399,12 @@ function prelude {
         "native") mode_symbol="🖥️ ";;
         "docker" | "hybrid") mode_symbol="🐋 ";;
     esac
+
+    case $mode in
+    	"docker" | "hybrid")
+    		COMPILER_RT_DIR="$(docker_var COMPILER_RT_DIR)/armv7e-m"
+    		NEWLIB_DIR="$(docker_var NEWLIB_NANO_DIR)/arm-none-eabi/lib"
+	esac
 
     cat <<-EOF > "${BUILD_FILE}"
 		# Build file for $target_name ($target_type)
@@ -412,6 +430,9 @@ function prelude {
 		target_type = ${target_type}
 		name = ${target_name}
 		mode = ${mode_symbol}$
+
+		compiler_rt_dir = ${COMPILER_RT_DIR}
+		newlib_dir = ${NEWLIB_DIR}
 	EOF
 }
 
@@ -553,6 +574,7 @@ help_text "${@}"
 process_args
 adjust_paths
 find_source_files
+process_include_dirs
 prelude
 docker_vars
 body "debug"
