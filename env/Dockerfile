@@ -35,12 +35,12 @@
 #  - charlie-ht from [this thread](https://git.io/fhNfB) for providing a patch
 #    for ninja's compdb tool that makes it actually emit rules
 #
-# Modified: Feb 27th, 2019
+# Modified: Mar 21st, 2019
 
 
 ARG BASE=ubuntu:18.04
-ARG VERSION=0.2.1
-ARG LLVM_VER=7
+ARG VERSION=0.3.0
+ARG LLVM_VER=8
 ARG INSTALL_DIR=/usr
 ARG NEWLIB_TAG=newlib-3.1.0
 ARG NINJA_TAG=v1.9.0
