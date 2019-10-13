@@ -559,7 +559,8 @@ function body {
 
 	build \$builddir/${build_type}/\$name.axf: objcopy \$builddir/${build_type}/\$name.out
 
-	build size-${build_type}: size \$builddir/${build_type}/\$name.out
+	build size-${build_type}: size \$builddir/${build_type}/\$name.out${pipe_docker_flags}
+	build sections-${build_type}: sections \$builddir/${build_type}/\$name.out
 	build build-${build_type}: phony \$builddir/${build_type}/\$name.axf
 
 	build flash-${build_type}: flash \$builddir/${build_type}/\$name.axf
@@ -600,6 +601,7 @@ function conclusion {
 
 		# And finally:
 
+		build sections: phony sections-${build_type}
 		build size: phony size-${build_type}
 		build build: phony build-${build_type}
 		build flash: phony flash-${build_type}

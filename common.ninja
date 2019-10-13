@@ -49,6 +49,9 @@ ld  = ld.lld
 objcopy = llvm-objcopy
 size    = llvm-size
 openocd = openocd
+nm      = llvm-nm
+grep    = grep
+numfmt  = numfmt
 
 gdb  = gdb-multiarch
 lldb = lldb
@@ -119,9 +122,20 @@ lldb_flags =
 fmt_flags = $
     -style=Google
 
-# Note: this file is identical between the TM4C and the LM4F
-openocd_flags = $
-    -c "source [find board/ek-tm4c123gxl.cfg]"
+nm_flags = $
+  --demangle $
+  --color $
+  --no-weak $
+  --radix=d
+
+grep_colors = mt=1;33;39
+
+grep_flags = $
+   --color
+
+numfmt_flags = $
+  --to=iec-i $
+  --suffix=B
 
 header_search_dirs =
 
@@ -225,10 +239,28 @@ rule objcopy
     $in $out
   description = $mode OBJCOPY $in -> $out
 
-rule size
-  command = $docker_prefix $docker_flags $docker_cntnr $size $
+rule sections
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $size $
     $size_flags $
     $in
+  description = $mode SECTIONS $in
+  pool = console
+
+# nm and numfmt will run inside the container, cut and grep will run outside.
+rule size
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $nm $
+    $nm_flags $
+    --print-size $
+    --size-sort $
+    $in $
+    | $docker_prefix $docker_mounts $docker_flags $docker_cntnr $numfmt $
+    $numfmt_flags $
+    --field 2 $
+    --format '-%10f' $
+    | cut -d- -f2- $
+    | GREP_COLORS="$grep_colors" grep $
+    $grep_flags $
+    "^[[:space:]]*[0-9.iKMGT]*B"
   description = $mode SIZE $in
   pool = console
 
