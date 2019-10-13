@@ -85,6 +85,7 @@ cc_flags = $c_flags $
     -ffunction-sections $
     -fdata-sections $
     -fno-exceptions $
+    -fcolor-diagnostics $
     -std=c99 $
     -Dgcc
 
@@ -96,6 +97,7 @@ cxx_flags = $c_flags $
     -ffunction-sections $
     -fdata-sections $
     -fno-exceptions $
+    -fcolor-diagnostics $
     -std=c++17 $
     -Dgcc
 
@@ -104,10 +106,15 @@ ld_flags = $
 
 ar_flags =
 
+ld_flags = $
+  --color-diagnostics $
+  --gc-sections
+
 objcopy_flags = $
     -O binary
 
-size_flags =
+size_flags = $
+  --color
 
 gdb_flags =
 
