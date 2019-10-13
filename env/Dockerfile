@@ -230,6 +230,7 @@ RUN : \
  && apt-get install -y \
         curl gnupg \
         gdb-multiarch openocd \
+        graphviz \
     -qq 2>/dev/null \
  && apt-get clean -y \
         -qq 2>/dev/null \

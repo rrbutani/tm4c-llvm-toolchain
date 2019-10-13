@@ -191,7 +191,7 @@ TODO: examples branch
 - [x] openocd
 - [x] gdb
 - [x] ninja
-- [ ] graphviz (dot)
+- [x] graphviz (dot)
 - [x] clang-tools + clang-format + clang-tidy
 - [x] Clang version + image base + newlib tag as build args
 - [x] update-alternatives for llvm/clang tools

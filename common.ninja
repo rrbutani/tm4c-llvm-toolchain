@@ -316,10 +316,12 @@ rule browse
 # Intentionally runs ninja in container (if we're running in a container) and
 # dot outside; the container doesn't ship with graphviz (+ ~30MB) so this will
 # only work with native and hybrid configurations (or if you use a container
-# that has graphviz!). # TODO
+# that has graphviz!).
 rule graph
-  command = $docker_prefix $docker_flags $docker_cntnr ninja $
-     -t graph $ninja_graph_target | dot -Tpng > $out
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr ninja $
+      -t graph $ninja_graph_target $
+      | $docker_prefix $docker_mounts $docker_flags $docker_cntnr dot $
+      -Tpng > $out
   description = $mode NINJA + DOT > $out
 
 # Once again, this intentionally redirects to a file outside the container. If
