@@ -168,6 +168,10 @@ with_default INCLUDE_DIRS "'.' 'inc'"
 with_default COMPILER_RT_DIR "/usr/arm-compiler-rt/lib/armv7e-m/fpu"
 with_default NEWLIB_DIR "/usr/newlib-nano/arm-none-eabi/lib"
 with_default BUILD_FILE "build.ninja"
+with_default RELEASE_C_OPT "fast"
+with_default RELEASE_LTO_OPT "3"
+with_default DEBUG_C_OPT "0"
+with_default DEBUG_LTO_OPT "0"
 
 ###############################################################################
 
@@ -354,6 +358,26 @@ function process_args {
     		print "Warning: include directory \`${inc_dir}\` doesn't exist." "${BROWN}"
         fi
 	done
+
+	# Check optimization levels:
+	# $1 : thing being checked; $2 : given opt level; $3 : valid opt levels
+	function check_opt {
+		local valid_opts=""
+
+		for o in "${@:3}"; do
+			if [ "${2}" == "${o}" ]; then return 0; fi;
+
+			valid_opts="${valid_opts}'${o}', "
+		done
+
+		error "Invalid ${1} optimization level, valid values are ${valid_opts}and ''." 2
+	}
+
+    check_opt "Release Mode compiler" "${RELEASE_C_OPT}" 0 1 2 3 fast s z
+    check_opt "Release Mode linker LTO" "${RELEASE_LTO_OPT}" 0 1 2 3
+
+    check_opt "Debug Mode compiler" "${DEBUG_C_OPT}" 0 1 2 3 fast s z
+    check_opt "Debug Mode linker LTO" "${DEBUG_LTO_OPT}" 0 1 2 3
 }
 
 # Find the new root path and then rewrite all our paths to be relative to it.
@@ -534,7 +558,8 @@ function docker_vars {
 function body {
     local build_type="${1}"
 
-    local docker_flags
+    local c_opt_level_var="${1^^}_C_OPT"
+    local lto_opt_level_var="${1^^}_LTO_OPT"
     # shellcheck disable=SC2016
     if [ "${mode}" == "hybrid" ]; then
         docker_flags='docker_flags = $docker_flags --privileged'
@@ -544,17 +569,19 @@ function body {
 
 	# Build Type: ${build_type}
 
-	cc_opt_level  = \$cc_opt_${build_type}
-	lto_opt_level = \$lto_opt_${build_type}
+	c_opt_${build_type} = ${!c_opt_level_var-0}
+	lto_opt_${build_type} = ${!lto_opt_level_var-0}
 
 	$(for obj in "${!object_paths[@]}"; do
 		echo "build $(ninja_escaped_string "\$builddir/${build_type}/objs/${obj}"): $(${object_functions["${obj}"]}) $(ninja_escaped_string "${object_paths["${obj}"]}")"
+		echo "    c_opt_level = \$c_opt_${build_type}"
 	done)
 
 	build \$builddir/${build_type}/\$name.out: link$(
 		for obj in "${!object_paths[@]}"; do
 			echo -ne " $\n  $(ninja_escaped_string "\$builddir/${build_type}/objs/${obj}")"
 		done
+		echo -ne "\n    lto_opt_level = \$lto_opt_${build_type}"
 	)
 
 	build \$builddir/${build_type}/\$name.axf: objcopy \$builddir/${build_type}/\$name.out
