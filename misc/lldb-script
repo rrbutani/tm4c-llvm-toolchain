@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+# $1: openocd path; $2: lldb path; $3: gdb path; $4: binary path (.out, to be passed into lldb); $5: build dir; $6-: openocd flags
+#
+# Assumes that the binary has already been flashed.
+
+openocd="${1}"
+lldb="${2}"
+gdb="${3}"
+
+"${openocd}" "${@:6}" \
+    -c "log_output ${5}/openocd.log" \
+    -c "init" \
+    -c "halt" \
+    -c "reset init" \
+    -c "gdb_port" &>/dev/null &
+
+openocd_pid=$!
+
+"${gdb}" "${4}" \
+    -ex "target remote localhost:3333" \
+    -ex "monitor arm semihosting enable" \
+    -ex "set confirm off" \
+    -ex "quit" &>/dev/null
+
+"${lldb}" "${4}" \
+    -o "gdb-remote 3333" \
+    -o "break set -n main" \
+
+trap 'kill -9 ${openocd_pid} &>/dev/null' EXIT SIGTERM

@@ -607,6 +607,7 @@ function body {
 	build run-${build_type}: start \$builddir/${build_type}/\$name.axf | flash-${build_type}${docker_prefix}
 
 	build gdb-${build_type}: gdb \$builddir/${build_type}/\$name.out | flash-${build_type}${docker_prefix}${interactive_docker_flags}
+	build lldb-${build_type}: lldb \$builddir/${build_type}/\$name.out | flash-${build_type}${docker_prefix}${interactive_docker_flags}
 	EOF
 }
 
@@ -648,6 +649,7 @@ function conclusion {
 		build flash: phony flash-${build_type}
 		build run: phony run-${build_type}
 		build gdb: phony gdb-${build_type}
+		build lldb: phony lldb-${build_type}
 
 		build clean: rm \$builddir
 

@@ -69,6 +69,7 @@ docker_cntnr  =
 
 linker_script = "${common_dir}/misc/tm4c.ld"
 gdb_script = "${common_dir}/misc/gdb-script"
+lldb_script = "${common_dir}/misc/lldb-script"
 
 # gen.sh should specify these explicitly, but here are defaults anyways:
 c_opt_level  = 0
@@ -302,6 +303,16 @@ rule gdb
   description = $mode GDB $in
   pool = console
 
+rule lldb
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $lldb_script $
+    $openocd $
+    $lldb $
+    $gdb $
+    $in $
+    $builddir $
+    $openocd_flags
+  description = $mode LLDB $in
+  pool = console
 
 # TODO:
 #rule uart
