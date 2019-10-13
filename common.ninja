@@ -68,19 +68,22 @@ docker_flags  =
 docker_cntnr  =
 
 linker_script = "${common_dir}/misc/tm4c.ld"
+gdb_script = "${common_dir}/misc/gdb-script"
 
 # gen.sh should specify these explicitly, but here are defaults anyways:
 c_opt_level  = 0
 lto_opt_level = 0
 
 # Shared flags between the assembler and C/C++ compilers:
+# Note that debug symbols are always included!
 c_flags = $
   --target=thumbv7em-unknown-none-eabi $
     -mthumb $
     -mcpu=cortex-m4 $
     -mfpu=fpv4-sp-d16 $
     -mfloat-abi=hard $
-    -flto
+    -flto $
+    -g
 
 cc_flags = $c_flags $
     -ffunction-sections $
@@ -290,9 +293,15 @@ rule start
     -c "resume; shutdown"
   description = $mode OPENOCD (start) $in
 
-# TODO:
-#rule debug
-#  command = $docker_prefix $docker_flags $docker_cntnr $gdb $
+
+rule gdb
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $gdb $
+    $gdb_flags $
+    -x $gdb_script $
+    $in
+  description = $mode GDB $in
+  pool = console
+
 
 # TODO:
 #rule uart
