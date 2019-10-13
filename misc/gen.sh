@@ -293,12 +293,13 @@ function process_args {
 
     mode=${MODE,,}
 
-    # If we're using docker or hybrid, check that it's installed:
-    # (we run `docker images` here instead of just using hash to check that
-    # docker permissions are set up right too)
-    { [ "${mode}" == "docker" ] || [ "${mode}" == "hybrid" ]; } &&
+    # If we're using docker (and we're not already running in docker) or hybrid,
+    # check that it's installed (we run `docker images` here instead of just
+    # using hash to check that docker permissions are set up right too):
+    if { [ "${mode}" == "docker" ] && [ ! -f "/.dockerenv" ]; } || [ "${mode}" == "hybrid" ]; then
       { "${DOCKER}" images > /dev/null 2>&1 ||
         error "Please make sure docker (${DOCKER}) is installed, configured, and running." 2 "installation"; }
+    fi
 
     # Check TARGET:
     if [[ "${TARGET}" =~ .*\.a$ ]]; then
@@ -482,8 +483,10 @@ function prelude {
 
     case $mode in
     	"docker" | "hybrid")
-    		COMPILER_RT_DIR="$(docker_var COMPILER_RT_DIR)/armv7e-m"
-    		NEWLIB_DIR="$(docker_var NEWLIB_NANO_DIR)/arm-none-eabi/lib"
+            if [ ! -f "/.dockerenv" ]; then # If we're in a docker container, don't:
+        		COMPILER_RT_DIR="$(docker_var COMPILER_RT_DIR)/armv7e-m"
+        		NEWLIB_DIR="$(docker_var NEWLIB_NANO_DIR)/arm-none-eabi/lib"
+            fi
 	esac
 
     cat <<-EOF > "${BUILD_FILE}"
