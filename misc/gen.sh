@@ -652,9 +652,21 @@ function conclusion {
 
 		build format: format${files_to_format[@]}
 
+		# A regenerate build statement that runs unconditionally.
 		build regenerate: regenerate
 		${regen_docker_flags}
-		build build.ninja: regenerate | \$common_dir/common.ninja
+
+		# Some aliases for it:
+		build update: phony regenerate
+		build gen: phony regenerate
+		build regen: phony regenerate
+
+		# And a build statement that rebuilds build.ninja when required.
+		build ${BUILD_FILE}: regenerate | \$common_dir/common.ninja$(
+			for f in "${existing_folders[@]}"; do
+				echo -ne " $\n  $(ninja_escaped_string "${f}")"
+			done
+		)
 		${regen_docker_flags}
 
 		build all: phony build-release build-debug
