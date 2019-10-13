@@ -350,8 +350,9 @@ function process_args {
     declare -a -g "include_dirs=(${INCLUDE_DIRS})"
     for inc_dir in "${include_dirs[@]}"; do
     	# Warn but don't error out:
-    	[ ! -d "${inc_dir}" ] &&
+        if [ ! -d "${inc_dir}" ]; then
     		print "Warning: include directory \`${inc_dir}\` doesn't exist." "${BROWN}"
+        fi
 	done
 }
 
