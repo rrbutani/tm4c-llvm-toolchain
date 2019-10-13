@@ -550,7 +550,8 @@ function docker_vars {
         cat <<-EOF >> "${BUILD_FILE}"
 
 		docker_prefix = ${DOCKER} run
-		docker_flags  = -t $(docker_mount_flags)
+		docker_mounts = $(docker_mount_flags)
+		docker_flags  = -t
 		docker_cntnr  = ${DOCKER_CONTAINER}
 		EOF
     fi
@@ -563,9 +564,18 @@ function body {
 
     local c_opt_level_var="${1^^}_C_OPT"
     local lto_opt_level_var="${1^^}_LTO_OPT"
+
+    local docker_prefix
+    local pipe_docker_flags
+    local interactive_docker_flags
+
     # shellcheck disable=SC2016
     if [ "${mode}" == "hybrid" ]; then
-        docker_flags='docker_flags = $docker_flags --privileged'
+        docker_prefix=$'\n    docker_prefix = $docker_prefix --privileged'
+        # Gotta use only -i for targets that use pipes
+        pipe_docker_flags=$'\n    docker_flags = -i'
+        # But both for targets that are interactive:
+        interactive_docker_flags=$'\n    docker_flags = -i -t'
     fi
 
     cat <<-EOF >> "${BUILD_FILE}"
@@ -593,10 +603,8 @@ function body {
 	build sections-${build_type}: sections \$builddir/${build_type}/\$name.out
 	build build-${build_type}: phony \$builddir/${build_type}/\$name.axf
 
-	build flash-${build_type}: flash \$builddir/${build_type}/\$name.axf
-	    ${docker_flags}
-	build run-${build_type}: start \$builddir/${build_type}/\$name.axf | flash-${build_type}
-	    ${docker_flags}
+	build flash-${build_type}: flash \$builddir/${build_type}/\$name.axf${docker_prefix}
+	build run-${build_type}: start \$builddir/${build_type}/\$name.axf | flash-${build_type}${docker_prefix}
 	EOF
 }
 
@@ -617,9 +625,10 @@ function conclusion {
 
     # shellcheck disable=SC2016
     if [ "${mode}" == "hybrid" ]; then
-        browse_docker_flags='docker_flags = $docker_flags -i -p 8000:8000'
+        browse_docker_flags='    docker_flags = $docker_flags -i -p 8000:8000'
         regen_docker_flags=$(
         	echo "    docker_prefix ="
+            echo "    docker_mounts ="
         	echo "    docker_flags ="
         	echo "    docker_cntnr ="
         )
@@ -647,7 +656,7 @@ function conclusion {
 		# TODO: warning about running this in docker for hybrid confs
 		build browse: browse
 		    ninja_browse_flags = -p 8000 -a 0.0.0.0
-		    ${browse_docker_flags}
+		${browse_docker_flags}
 
 		# TODO: Docker or not? Possibly only an issue for 'docker' configs..
 		build compile_commands.json: compdb

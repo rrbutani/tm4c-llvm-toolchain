@@ -63,6 +63,7 @@ tidy = clang-tidy
 builddir = target
 
 docker_prefix =
+docker_mounts =
 docker_flags  =
 docker_cntnr  =
 
@@ -167,7 +168,7 @@ gen_args =
 
 # C Compiler
 rule cc
-  command = $docker_prefix $docker_flags $docker_cntnr $cc $
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $cc $
     $cc_flags $
     -O${c_opt_level} $
     -MMD -MT $out -MF $out.d $
@@ -181,7 +182,7 @@ rule cc
 
 # Assembler without the preprocessor (.s files)
 rule as
-  command = $docker_prefix $docker_flags $docker_cntnr $as $
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $as $
     $as_flags $
     -O${c_opt_level} $
     -c $in $
@@ -190,7 +191,7 @@ rule as
 
 # Assembler *with* the preprocessor (.S files)
 rule asp
-  command = $docker_prefix $docker_flags $docker_cntnr $cc $
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $cc $
     $cc_flags $
     -O${c_opt_level} $
     -MMD -MT $out -MF $out.d $
@@ -203,7 +204,7 @@ rule asp
   deps = gcc
 
 rule cxx
-  command = $docker_prefix $docker_flags $docker_cntnr $cxx $
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $cxx $
     $cxx_flags $
     -O${c_opt_level} $
     -MMD -MT $out -MF $out.d $
@@ -216,7 +217,7 @@ rule cxx
   deps = gcc
 
 rule link
-  command = $docker_prefix $docker_flags $docker_cntnr $ld $
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $ld $
     -T ${linker_script} $
     $in $
     ${ld_flags} $
@@ -229,13 +230,13 @@ rule link
   description = $mode LINK $in -> $out
 
 rule ar
-  command = $docker_prefix $docker_flags $docker_cntnr $ar $
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $ar $
     $ar_flags $
     rcs $in $out
   description = $mode AR $in -> $out
 
 rule objcopy
-  command = $docker_prefix $docker_flags $docker_cntnr $objcopy $
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $objcopy $
     $objcopy_flags $
     $in $out
   description = $mode OBJCOPY $in -> $out
@@ -266,7 +267,7 @@ rule size
   pool = console
 
 rule flash
-  command = $docker_prefix $docker_flags $docker_cntnr $openocd $
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $openocd $
     $openocd_flags $
     -c "init" $
     -c "halt" $
@@ -281,7 +282,7 @@ rule flash
   description = $mode OPENOCD (flash) $in
 
 rule start
-  command = $docker_prefix $docker_flags $docker_cntnr $openocd $
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $openocd $
     $openocd_flags $
     -c "init" $
     -c "halt" $
@@ -301,13 +302,13 @@ rule rm
   description = RM $in
 
 rule format
-  command = $docker_prefix $docker_flags $docker_cntnr $fmt $
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $fmt $
     $fmt_flags $
     -i $in
   description = $mode FMT $in
 
 rule browse
-  command = $docker_prefix $docker_flags $docker_cntnr ninja $
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr ninja $
     -t browse $ninja_browse_flags
   description = $mode NINJA -t browse
   pool = console
@@ -315,7 +316,7 @@ rule browse
 # Intentionally runs ninja in container (if we're running in a container) and
 # dot outside; the container doesn't ship with graphviz (+ ~30MB) so this will
 # only work with native and hybrid configurations (or if you use a container
-# that has graphviz!).
+# that has graphviz!). # TODO
 rule graph
   command = $docker_prefix $docker_flags $docker_cntnr ninja $
      -t graph $ninja_graph_target | dot -Tpng > $out
@@ -325,12 +326,12 @@ rule graph
 # mounted volumes are configured correctly there shouldn't be a real difference
 # and this saves us from starting up another bash instance.
 rule compdb
-  command = $docker_prefix $docker_flags $docker_cntnr ninja $
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr ninja $
     -t compdb > $out
   description = $mode NINJA -t compdb > $out
 
 rule regenerate
-  command = $docker_prefix $docker_flags $docker_cntnr bash -c "$
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr bash -c "$
     $gen_vars $
     ${common_dir}/misc/gen.sh $
     $gen_args"
