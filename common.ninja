@@ -267,22 +267,25 @@ rule size
 rule flash
   command = $docker_prefix $docker_flags $docker_cntnr $openocd $
     $openocd_flags $
-    -c "init"                          $
-    -c "reset"                         $
-    -c "halt"                          $
-    -c "flash probe 0"                 $
+    -c "init" $
+    -c "halt" $
+    -c "reset init" $
+    -c "sleep 100" $
+    -c "flash probe 0" $
     -c "flash write_image erase ${in}" $
-    -c "verify_image ${in}"            $
-    -c "halt"                          $
+    -c "sleep 100" $
+    -c "verify_image ${in}" $
+    -c "halt" $
     -c "shutdown"
   description = $mode OPENOCD (flash) $in
 
 rule start
   command = $docker_prefix $docker_flags $docker_cntnr $openocd $
     $openocd_flags $
-    -c "init"      $
-    -c "reset run" $
-    -c "shutdown"
+    -c "init" $
+    -c "halt" $
+    -c "reset init" $
+    -c "resume; shutdown"
   description = $mode OPENOCD (start) $in
 
 # TODO:
