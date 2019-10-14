@@ -228,6 +228,24 @@ function error {
     exit "${2:-1}";
 }
 
+# $1 : name of associative array
+function print_kvs {
+    local _kvs k v longest
+    _kvs=$(declare -p  "${1}")
+    eval "${_kvs/"${1}"/_kvs}"
+
+    longest=0
+
+    for k in "${!_kvs[@]}"; do
+        if [ ${#k} -gt $longest ]; then longest=${#k}; fi
+    done
+
+    for k in "${!_kvs[@]}"; do
+        v="${_kvs["${k}"]}"
+        printf "  ${2}%-$((longest))s${NC} -> ${3}%s${NC}\n" "${k}" "${v}"
+    done
+}
+
 # $@ : strings
 function longest_common_prefix {
     local prefix=""
@@ -463,9 +481,14 @@ function find_source_files {
        done
     done
 
+    declare -A object_paths_for_printing
+
     for obj in "${!object_paths[@]}"; do
-        echo "'$obj' (${object_functions["${obj}"]}) -> '${object_paths["${obj}"]}'"
+        # echo "'$obj' (${object_functions["${obj}"]}) -> '${object_paths["${obj}"]}'"
+        object_paths_for_printing["$(echo -ne "${BROWN}""[${object_functions["${obj}"]}]") $(echo -ne "${GREEN}'$obj'")"]="'${object_paths["${obj}"]}'"
     done
+
+    print_kvs object_paths_for_printing ${NC} ${CYAN}
 
     unset IFS
 }
@@ -703,9 +726,7 @@ function fini {
 	print "type: \t\t ${mode}"
 	print "common dir: \t ${common_dir}"
 	print "modules: \t ${!modules[*]}"
-	for p in "${!modules[@]}"; do
-	    echo "${p} -> ${modules[$p]}"
-	done
+	print_kvs modules ${BROWN} ${CYAN}
 
 	print "$(longest_common_prefix "$(realpath .)/" "${common_dir}" "${!modules[@]}")"
 	print "new root dir = $root_dir" $PURPLE
