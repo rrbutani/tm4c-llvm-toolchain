@@ -286,6 +286,12 @@ rule flash
     -c "shutdown"
   description = $mode OPENOCD (flash) $in
 
+rule flash-lm4flash
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $lm4flash $
+    -v $
+    $in
+  description = $mode LM4FLASH $in
+
 rule start
   command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $openocd $
     $openocd_flags $

@@ -231,6 +231,7 @@ RUN : \
         curl gnupg \
         gdb-multiarch openocd \
         graphviz \
+        lm4flash \
     -qq 2>/dev/null \
  && apt-get clean -y \
         -qq 2>/dev/null \
