@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-VERSION=0.2.1
+VERSION=0.2.2
 
 # Options (arguments):
 MODE=${1:-docker} # native or docker or hybrid
@@ -154,7 +154,7 @@ with_default ()
 
 # Other options:
 with_default DOCKER "docker"
-with_default DOCKER_CONTAINER "rrbutani/arm-llvm-toolchain:0.2.1"
+with_default DOCKER_CONTAINER "rrbutani/arm-llvm-toolchain:${VERSION}"
 # Be very careful when using these; we don't really check for duplicates.
 # a: assembly w/o preprocessor
 # A: assembly w/preprocessor
@@ -200,6 +200,15 @@ readonly RED='\033[1;31m'
 readonly NC='\033[0m' # No Color
 
 # Functions #
+
+# &1 : things to process; $1 : function to run on each element
+function map() { while read -r n; do ${1} "${n}"; done; }
+
+# $1 : name of the array being piped out
+function array { for i in "${@}"; do echo "${i}"; done; }
+
+# $1 : name of directory to check
+function filter_exists { if [ -d "${1}" ]; then echo "$1"; fi }
 
 # shellcheck disable=SC2059
 function print {
@@ -261,8 +270,7 @@ function longest_common_prefix {
         char=${arr[0]:$idx:1}
 
         for n in "${arr[@]}"; do
-            {
-                 # Bail if we're finished with a string:
+            {   # Bail if we're finished with a string:
                 [ "${idx}" -ge "${#n}" ] ||
                 # Or if a character doesn't match:
                 # (Note: we need the above case too because bash will throw
@@ -659,6 +667,9 @@ function conclusion {
         	echo "    docker_cntnr ="
         )
     fi
+
+    local existing_folders
+    readarray existing_folders < <(array "${folders[@]}" | map filter_exists)
 
     local build_type="${1}"
 

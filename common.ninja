@@ -106,9 +106,6 @@ cxx_flags = $c_flags $
     -std=c++17 $
     -Dgcc
 
-ld_flags = $
-    --gc-sections
-
 ar_flags =
 
 ld_flags = $
@@ -120,6 +117,10 @@ objcopy_flags = $
 
 size_flags = $
   --color
+
+# Note: this file is identical between the TM4C and the LM4F
+openocd_flags = $
+    -c "source [find board/ek-tm4c123gxl.cfg]"
 
 gdb_flags =
 
