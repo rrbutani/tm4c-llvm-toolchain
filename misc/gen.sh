@@ -335,7 +335,7 @@ function process_args {
         target_type=bin
         target_name="$(basename "${TARGET}" .out)"
     else
-        error "Invalid target (${TARGET})."
+        error "Invalid target (${TARGET}); valid options end with '.a' (lib) or '.out' (bin)"
     fi
 
     # Check COMMON_PATH:
@@ -431,7 +431,7 @@ function adjust_paths {
       "$(longest_common_prefix "$(realpath .)/" "${common_dir}" "${modules[@]}")_"
     )
 
-    # project_dir="$(realpath --relative-to="${root_dir}" ".")"
+    project_dir="$(realpath --relative-to="${root_dir}" ".")"
     common_dir="$(realpath --relative-to="." "$common_dir")"
 
     for mod in "${!modules[@]}"; do
