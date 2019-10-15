@@ -490,10 +490,12 @@ function find_source_files {
     done
 
     declare -A object_paths_for_printing
+    local k v
 
     for obj in "${!object_paths[@]}"; do
         # echo "'$obj' (${object_functions["${obj}"]}) -> '${object_paths["${obj}"]}'"
-        object_paths_for_printing["$(echo -ne "${BROWN}""[${object_functions["${obj}"]}]") $(echo -ne "${GREEN}'$obj'")"]="'${object_paths["${obj}"]}'"
+        k="$(echo -ne "${BROWN}""[${object_functions["${obj}"]}]") $(echo -ne "${GREEN}'${object_paths["${obj}"]}'")"
+        object_paths_for_printing["${k}"]="'${obj}'"
     done
 
     print_kvs object_paths_for_printing ${NC} ${CYAN}
@@ -737,7 +739,10 @@ function fini {
 	print "type: \t\t ${mode}"
 	print "common dir: \t ${common_dir}"
 	print "modules: \t ${!modules[*]}"
-	print_kvs modules ${BROWN} ${CYAN}
+
+    if [ ${#modules[@]} -gt 0 ]; then
+        print_kvs modules ${BROWN} ${CYAN}
+    fi
 
 	print "$(longest_common_prefix "$(realpath .)/" "${common_dir}" "${!modules[@]}")"
 	print "new root dir = $root_dir" $PURPLE
