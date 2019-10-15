@@ -707,6 +707,7 @@ function conclusion {
 		build compdb: phony compile_commands.json
 
 		build format: format${files_to_format[@]}
+		build fmt: phony format
 
 		# A regenerate build statement that runs unconditionally.
 		build regenerate: regenerate
