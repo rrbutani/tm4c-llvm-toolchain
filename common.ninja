@@ -52,6 +52,7 @@ openocd = openocd
 nm      = llvm-nm
 grep    = grep
 numfmt  = numfmt
+git     = git
 
 gdb  = gdb-multiarch
 lldb = lldb
@@ -287,7 +288,8 @@ rule flash
   description = $mode OPENOCD (flash) $in
 
 rule flash-lm4flash
-  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $lm4flash $
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $
+    $lm4flash $
     -v $
     $in
   description = $mode LM4FLASH $in
@@ -311,7 +313,8 @@ rule gdb
   pool = console
 
 rule lldb
-  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $lldb_script $
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $
+    $lldb_script $
     $openocd $
     $lldb $
     $gdb $
@@ -358,6 +361,24 @@ rule compdb
   command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr ninja $
     -t compdb > $out
   description = $mode NINJA -t compdb > $out
+
+# Remove build artifacts.
+rule scrub
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr ninja $
+    -t clean
+  description = $mode NINJA -t clean
+
+# Remove all gitignore'd files.
+rule powerwash
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $git $
+    clean -ndiX
+  description = $mode GIT clean -X
+
+# Remove everything that isn't tracked by git (gitignore'd and untracked files).
+rule pristine
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $git $
+    clean -ndix
+  description = $mode GIT clean -x
 
 rule regenerate
   command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr bash -c "$

@@ -687,7 +687,10 @@ function conclusion {
 		build gdb: phony gdb-${build_type}
 		build lldb: phony lldb-${build_type}
 
-		build clean: rm \$builddir
+		build clean: rm \$builddir  # Delete everything in the build directory
+		build scrub: scrub         # Remove all build artifacts
+		build powerwash: powerwash # Remove gitignore'd files
+		build pristine: pristine   # Remove everything not tracked by git
 
 		build graph.png: graph
 		  ninja_graph_target = all
