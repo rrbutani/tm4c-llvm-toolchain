@@ -240,7 +240,7 @@ function error {
 # $1 : name of associative array
 function print_kvs {
     local _kvs k v longest
-    _kvs=$(declare -p  "${1}")
+    _kvs=$(declare -p  "${1}" 2>/dev/null) || return
     eval "${_kvs/"${1}"/_kvs}"
 
     longest=0
@@ -743,10 +743,7 @@ function fini {
 	print "type: \t\t ${mode}"
 	print "common dir: \t ${common_dir}"
 	print "modules: \t ${!modules[*]}"
-
-    if [ ${#modules[@]} -gt 0 ]; then
-        print_kvs modules ${BROWN} ${CYAN}
-    fi
+	print_kvs modules ${BROWN} ${CYAN} || :
 
 	print "$(longest_common_prefix "$(realpath .)/" "${common_dir}" "${!modules[@]}")"
 	print "new root dir = $root_dir" $PURPLE

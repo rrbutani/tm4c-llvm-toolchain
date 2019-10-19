@@ -11,7 +11,7 @@ The goal of this project is to provide a somewhat minimal setup for the TM4C tha
 
 A lesser goal of this project is to be somewhat transparent. The pieces of this setup are documented in the hopes that it's possible to understand what's happening underneath, even (and especially) if you don't have much experience with bare metal C.
 
-This is definitely still a work in progress and the toolchain (newlib in particular) contains some pretty unsightly workarounds. Using this in production or for anything important is probably not a great idea. That said, it _does_ seem to work on TM4C's and LM4F's without too much fuss.
+This is definitely still a work in progress and the toolchain (newlib in particular) contains some pretty unsightly workarounds. Using this in production or for anything important is probably not a great idea. That said, it _does_ seem to work on TM4Cs and LM4Fs without too much fuss.
 
 If you run into problems or find something that's not quite right feel free to open an issue! PRs are welcome too, especially for documentation.
 
