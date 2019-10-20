@@ -67,7 +67,8 @@ function upgrade {
 
     g fetch
     local_sha="$(g rev-parse HEAD)"
-    upstream_sha="$(g rev-parse HEAD)"
+    # shellcheck disable=SC1083
+    upstream_sha="$(g rev-parse master@{upstream})"
 
     if [ "${local_sha}" != "${upstream_sha}" ]; then
         print "Update available!" "${BOLD}"
@@ -98,10 +99,10 @@ function update {
 
 function new {
     local target_dir proj_name type mode modules
+    mkdir -p "${2-.}"
     target_dir="$(realpath "${2-.}")"
 
     print "Making a new tlt project in \`${target_dir}\`.\n" "${CYAN}"
-    mkdir -p "${target_dir}"
 
     read -r -p "First, let's give this project a name: " proj_name
 
