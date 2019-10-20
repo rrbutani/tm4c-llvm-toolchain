@@ -44,7 +44,7 @@ ARG LLVM_VER=8
 ARG INSTALL_DIR=/usr
 ARG NEWLIB_TAG=newlib-3.1.0
 ARG NINJA_TAG=v1.9.0
-ARG RUN_CLANG_FMT_SHA=6c91e1ceb31eb6afc2dff5c94c84bb88c362539b
+ARG RUN_CLANG_FMT_SHA=d849ff8507f62713d1433bad5db015f7c68b2891
 
 # Compiler-RT and friends
 FROM $BASE as libs
@@ -280,7 +280,7 @@ ENV COMPILER_RT_DIR=/usr/arm-compiler-rt/lib
 
 RUN : \
  && curl -sL git.io/.gdbinit > ${HOME}/.gdbinit \
- && curl -sL https://raw.githubusercontent.com/Sarcasm/run-clang-format/${RUN_CLANG_FMT_SHA}/run-clang-format.py \
+ && curl -sL https://raw.githubusercontent.com/rrbutani/run-clang-format/${RUN_CLANG_FMT_SHA}/run-clang-format.py \
     > /usr/bin/run-clang-format \
  && chmod +x /usr/bin/run-clang-format
 

@@ -63,7 +63,7 @@ tidy = clang-tidy
 
 jq = jq
 
-run-clang-format = run-clang-format
+run-clang-format         = run-clang-format
 clang-apply-replacements = clang-apply-replacements
 
 builddir = target
@@ -364,10 +364,9 @@ rule format_check
   command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $
     $run-clang-format $
     --clang-format-executable $fmt $
-    --extensions $file $
     --color always $
-    -- $fmt_flags $
-    $in
+    $in $
+    --pass $fmt_flags
   description = $mode FMT (check) $in
   pool = console
 
