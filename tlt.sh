@@ -34,9 +34,9 @@ function print {
     fi
 
     if [ "$#" -eq 1 ]; then
-        >&2 echo $n "$1"
+        echo $n "$1"
     elif [ "$#" -eq 2 ]; then
-        >&2 printf "${2}" && >&2 echo $n "$1" && >&2 printf "${NC}"
+        printf "${2}" && >&2 echo $n "$1" && >&2 printf "${NC}"
     else
         >&2 printf "${RED}" && >&2 echo "Received: $* ($# args)" &&
         >&2 printf "${NC}"; return 1
@@ -79,7 +79,7 @@ function upgrade {
         print "Attempting to update..." "${BROWN}"
         g pull
 
-        print -n "New version is $("${0}" version)." "${BOLD}"
+        print "New version is $("${0}" version)." "${BOLD}"
         print "Success!" "${CYAN}"
     else
         print -n "Already up to date!" "${CYAN}"
