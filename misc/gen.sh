@@ -7,6 +7,7 @@ MODE=${1:-docker} # native or docker or hybrid
 TARGET=${2:-proj.out} # .out or .a
 MODULE_STRING=${3:-""} # list of things that end with .a as a string
 COMMON_PATH=${4:-$(dirname "$0")/..} # default: assumes this script is in common
+TLT_FILE=${5:-".tlt"} # looks for this file for variables and arguments
 
 # All or nothing:
 set -e
@@ -145,7 +146,8 @@ set -e
 # linking/LTO reasons; not sure if/how LTO and bitcode work with archives).
 
 D=()
-dump_defaults () { for v in "${D[@]}"; do echo -ne " $\n  ${v}='${!v}'"; done; }
+nnj_dump_vars () { for v in "${D[@]}"; do echo -ne " $\n  ${v}='${!v}'"; done; }
+tlt_dump_vars () { for v in "${D[@]}"; do declare -p "${v}"; done; }
 
 # $1 : variable name; $2 : default value
 # (note: this sticks things in the global scope! use with caution)
@@ -165,13 +167,42 @@ with_default DOCKER_CONTAINER "rrbutani/arm-llvm-toolchain:${VERSION}"
 with_default GLOBS "%.s:a|%.S:A|%.c:c|%.cpp:C|%.cc:C|%.cxx:C|"
 with_default FOLDERS "'.' 'src' 'asm'"
 with_default INCLUDE_DIRS "'.' 'inc'"
+with_default PUB_INCLUDE_DIRS "'inc'"
 with_default COMPILER_RT_DIR "/usr/arm-compiler-rt/lib/armv7e-m/fpu"
 with_default NEWLIB_DIR "/usr/newlib-nano/arm-none-eabi/lib"
 with_default BUILD_FILE "build.ninja"
 with_default RELEASE_C_OPT "fast"
 with_default RELEASE_LTO_OPT "3"
 with_default DEBUG_C_OPT "0"
-with_default DEBUG_LTO_OPT "0"
+with_default DEBUG_LTO_OPT "1"
+
+###############################################################################
+
+# Load in the tlt file (${TLT_FILE}) if we've got one:
+# shellcheck disable=SC1090
+if [ -f "${TLT_FILE}" ]; then
+	echo -e '\033[0;32m'"Found config file (\`${TLT_FILE}\`), loading..\n"'\033[0m'
+	. "${TLT_FILE}"
+fi
+
+# We load in the config file here so that values set in it take precedence over
+# the defaults _and_ over the environment variables.
+#
+# Altogether, for variables, the order goes:
+#  1) tlt file
+#  2) environment variables
+#  3) defaults
+#
+# Because the tlt files are generated, they'll ordinarily have values for all
+# the variables (and will thus fully shadow the defaults and env vars).
+
+# Arguments (we currently have 4: mode, target, modules, and common_path) work
+# the same way (tlt, then the ones passed in, then defaults), but with one
+# exception: tlt files don't record common_path.
+#
+# This is because they're meant to be checked into source control (and thus not
+# record host machine specific details like exactly where `tlt` is cloned on
+# a particular machine).
 
 ###############################################################################
 
@@ -531,12 +562,17 @@ function prelude {
 		# arguments and env vars or running \`ninja regenerate\`. See git.io/fhNW6#usage
 		# for help.
 
+		# Additionally, along with this file, a file name \`${TLT_FILE}\` was generated.
+		# This file should have the same variables and arguments as below.
+		# Another way to modify this project is to make changes to \`${TLT_FILE}\` and
+		# then run \`ninja regenerate\` or \`gen.sh\`.
+
 		common_dir = ${common_dir}
 
 		include \$common_dir/common.ninja
 
 		# Arguments passed to gen.sh; used when regenerating this file.
-		gen_vars =$(dump_defaults)
+		gen_vars =$(nnj_dump_vars)
 		gen_args = $
 		  '${MODE}' $
 		  '${TARGET}' $
@@ -557,6 +593,18 @@ function prelude {
 		for dir in "${include_dirs[@]}"; do
 			echo -ne " $\n  -I$dir"
 		done)
+	EOF
+
+    cat <<-EOF > "${TLT_FILE}"
+	# Configuration file for $target_name ($target_type).
+
+	# Arguments:
+	$(declare -p MODE)
+	$(declare -p TARGET)
+	$(declare -p MODULE_STRING)
+
+	# Variables:
+	$(tlt_dump_vars)
 	EOF
 }
 
