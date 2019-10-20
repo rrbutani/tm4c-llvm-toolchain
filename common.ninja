@@ -70,6 +70,9 @@ jq = jq
 run-clang-format         = run-clang-format
 clang-apply-replacements = clang-apply-replacements
 
+# Not currently used
+run-clang-tidy = run-clang-tidy
+
 builddir = target
 
 docker_prefix =
@@ -377,6 +380,7 @@ rule format_check
   pool = console
 
 # Requires compdb to be generated.
+# (this could switch to run-clang-tidy to do away with $in)
 rule tidy
   command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $tidy $
     $tidy_fix_flags $
@@ -386,6 +390,7 @@ rule tidy
   pool = console
 
 # Requires compdb to be generated.
+# (this could switch to run-clang-tidy to do away with $in)
 rule tidy_check
   command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $tidy $
     $tidy_flags $
@@ -394,10 +399,12 @@ rule tidy_check
   pool = console
 
 # Requires compdb to be generated.
-rule fix
+# (not currently used)
+rule apply_replacements
   command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $
     $clang-apply-replacements $
-    $clang_apply_replacements_flags
+    $clang_apply_replacements_flags $
+    $in
   description = $mode TIDY + FMT
 
 rule touch
