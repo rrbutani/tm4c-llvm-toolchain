@@ -232,6 +232,7 @@ RUN : \
         gdb-multiarch openocd \
         graphviz \
         lm4flash \
+        jq \
     -qq 2>/dev/null \
  && apt-get clean -y \
         -qq 2>/dev/null \

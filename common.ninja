@@ -61,6 +61,7 @@ dot  = dot
 fmt  = clang-format
 tidy = clang-tidy
 
+jq = jq
 builddir = target
 
 docker_prefix =
@@ -71,6 +72,8 @@ docker_cntnr  =
 linker_script = "${common_dir}/misc/tm4c.ld"
 gdb_script = "${common_dir}/misc/gdb-script"
 lldb_script = "${common_dir}/misc/lldb-script"
+
+unused_file = .c
 
 # gen.sh should specify these explicitly, but here are defaults anyways:
 c_opt_level  = 0
@@ -337,6 +340,11 @@ rule format
     -i $in
   description = $mode FMT $in
 
+rule touch
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr touch $
+    $out
+  description = $mode TOUCH $out
+
 rule browse
   command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr ninja $
     -t browse $ninja_browse_flags
@@ -350,16 +358,41 @@ rule browse
 rule graph
   command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr ninja $
       -t graph $ninja_graph_target $
-      | $docker_prefix $docker_mounts $docker_flags $docker_cntnr dot $
+    | $docker_prefix $docker_mounts $docker_flags $docker_cntnr $dot $
       -Tpng > $out
   description = $mode NINJA + DOT > $out
+
+# Ninja's compdb generator uses the first file in $in as the "file" key in the
+# compilation database. This is problematic for us since certain files will show
+# up multiple times (i.e. for targets like format and tidy). The multiple
+# matching "file" keys for source code files confuse clang and friends, so we're
+# going to make a fake file that isn't actually used in the project solely so
+# that we can pass said file into clang-format and clang-tidy and its friends
+# and have that file be the "file" key for such commands.
+#
+# We're also going to purge all entries with this file as the key from the
+# generated compdb.
+build $builddir/$unused_file: touch
 
 # Once again, this intentionally redirects to a file outside the container. If
 # mounted volumes are configured correctly there shouldn't be a real difference
 # and this saves us from starting up another bash instance.
+#
+# The extra jq filtering here purges $builddir/$unused_file from compilation
+# database (see above).
 rule compdb
   command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr ninja $
-    -t compdb > $out
+      -t compdb $
+    | $docker_prefix $docker_mounts $docker_flags $docker_cntnr $jq $
+      '[.[] | select(.file != "$builddir/$unused_file")]' > $out
+#       '[.[] | select(.file != "$builddir/$unused_file")] + [{"file": "$builddir/$unused_file"}]' > $out
+# this is super weird: clang-tidy will warn about $unused_file not having a compile command if we put
+# in a compdb entry for it but have an empty compile command. But if we just omit the entry altogether, it
+# happily chugs along.
+#
+# Also note: if we don't include directory and compile keys, it'll just die (fails to use the compdb at all)
+# Also bizarre: if the file ($unused_file) doesn't end in an extension that clang-tidy recognizes, it'll
+# hard error (so we're using .c for now).
   description = $mode NINJA -t compdb > $out
 
 # Remove build artifacts.
