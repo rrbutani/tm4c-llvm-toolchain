@@ -5,6 +5,10 @@ VERSION=0.3.0
 # Arguments
 SUBCOMMAND=${1:-info}
 
+# As of now, the only env variables `tlt` itself uses are:
+#  - TlT_FILE (defaults to .tlt)
+#  - TLT_NO_GITIGNORES (if set tlt doesn't drop .gitignores; unset by default)
+
 # All or nothing:
 set -e
 
@@ -134,7 +138,7 @@ function new {
         "${TLT_INSTALL_DIR}/misc/gen.sh" \
             "${mode}" "${proj_name}" "${modules}" "${TLT_INSTALL_DIR}")
 
-    if [ ! -f "${target_dir}/.gitignore" ]; then
+    if [ ! -f "${target_dir}/.gitignore" ] && [ -z "${TLT_NO_GITIGNORES+x}" ]; then
         cat <<-EOF > "${target_dir}/.gitignore"
 		# tlt project files #
 		build.ninja
