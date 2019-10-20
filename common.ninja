@@ -144,8 +144,8 @@ gdb_flags =
 lldb_flags =
 
 fmt_flags = $
-    -style=file $
-    -fallback-style=Google
+  --style=file $
+  --fallback-style=Google
 
 fmt_fix_flags = $
     -i
@@ -158,8 +158,8 @@ tidy_fix_flags = $
  --fix-errors
 
 clang_apply_replacements_flags = $
-    -style=file $
-    -format
+  --style=file $
+  --format
 
 nm_flags = $
   --demangle $

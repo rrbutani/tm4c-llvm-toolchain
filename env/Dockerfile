@@ -35,12 +35,12 @@
 #  - charlie-ht from [this thread](https://git.io/fhNfB) for providing a patch
 #    for ninja's compdb tool that makes it actually emit rules
 #
-# Modified: Mar 21st, 2019
+# Modified: Oct 20th, 2019
 
 
 ARG BASE=ubuntu:18.04
 ARG VERSION=0.3.0
-ARG LLVM_VER=8
+ARG LLVM_VER=9
 ARG INSTALL_DIR=/usr
 ARG NEWLIB_TAG=newlib-3.1.0
 ARG NINJA_TAG=v1.9.0
@@ -60,18 +60,18 @@ RUN : \
         # binutils-arm-none-eabi \
     -qq 2>/dev/null
 
+ARG LLVM_VER
 RUN : \
  && curl https://apt.llvm.org/llvm-snapshot.gpg.key \
     | apt-key add - \
  && . /etc/lsb-release \
  && echo \
-        "deb http://apt.llvm.org/${DISTRIB_CODENAME:-bionic}/ llvm-toolchain-${DISTRIB_CODENAME:-bionic} main" \
+        "deb http://apt.llvm.org/${DISTRIB_CODENAME:-bionic}/ llvm-toolchain-${DISTRIB_CODENAME:-bionic}-${LLVM_VER} main" \
     >> /etc/apt/sources.list.d/llvm.list \
  && echo \
-        "deb-src http://apt.llvm.org/${DISTRIB_CODENAME:-bionic}/ llvm-toolchain-${DISTRIB_CODENAME:-bionic} main" \
+        "deb-src http://apt.llvm.org/${DISTRIB_CODENAME:-bionic}/ llvm-toolchain-${DISTRIB_CODENAME:-bionic}-${LLVM_VER} main" \
     >> /etc/apt/sources.list.d/llvm.list
 
-ARG LLVM_VER
 RUN : \
  && apt-get update -y \
     -qq 2>/dev/null \
@@ -249,23 +249,40 @@ RUN : \
     | apt-key add - \
  && . /etc/lsb-release \
  && echo \
-        "deb http://apt.llvm.org/${DISTRIB_CODENAME:-bionic}/ llvm-toolchain-${DISTRIB_CODENAME:-bionic} main" \
+        "deb http://apt.llvm.org/${DISTRIB_CODENAME:-bionic}/ llvm-toolchain-${DISTRIB_CODENAME:-bionic}-${LLVM_VER} main" \
     >> /etc/apt/sources.list.d/llvm.list \
  && echo \
-        "deb-src http://apt.llvm.org/${DISTRIB_CODENAME:-bionic}/ llvm-toolchain-${DISTRIB_CODENAME:-bionic} main" \
+        "deb-src http://apt.llvm.org/${DISTRIB_CODENAME:-bionic}/ llvm-toolchain-${DISTRIB_CODENAME:-bionic}-${LLVM_VER} main" \
     >> /etc/apt/sources.list.d/llvm.list
 
 RUN : \
  && apt-get update -y \
     -qq 2>/dev/null \
  && apt-get install -y \
-        clang-${LLVM_VER} lldb-${LLVM_VER} lld-${LLVM_VER} \
+        clang-${LLVM_VER} \
         clang-tools-${LLVM_VER} clang-tidy-${LLVM_VER} clang-format-${LLVM_VER} \
+        clangd-${LLVM_VER} \
         lld-${LLVM_VER} \
-        lldb-${LLVM_VER} \
         libc++-${LLVM_VER}-dev libc++abi-${LLVM_VER}-dev \
+        python-lldb-${LLVM_VER} \
         # clang-${LLVM_VER}-doc \
     -qq 2>/dev/null \
+ && : "The lldb-9 package has some weird conflicts; this is a workaround:" \
+    && mkdir /tmp/lldb \
+    && cd /tmp/lldb \
+    && apt-get download lldb-${LLVM_VER} -y \
+       -qq 2>/dev/null \
+    && ar x lldb*.deb \
+        && : "This'll handle control.tar.{xz,gz} inputs, but it'll always make an .xz." \
+        && tar xf control.tar.* \
+        && sed -i '/^\(Breaks\|Replaces\):/d' control \
+        && tar c postinst md5sums control | xz -c > control.tar.xz \
+        && ar rcs lldb-modified.deb debian-binary control.tar.xz data.tar.* \
+    && : dpkg --ignore-depends=llvm-9-tools \
+            --install lldb*.deb \
+    && dpkg --install lldb-modified.deb \
+    && cd - \
+    && rm -rf /tmp/lldb \
  && apt-get clean -y \
         -qq 2>/dev/null \
  && apt-get autoremove -y \
