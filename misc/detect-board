@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 ###############################################################################
 # Quick and dirty script to find the right device path for the LM4F/TM4C across
@@ -10,8 +10,6 @@
 
 UDEV_PATH="/dev/lm4f"
 CACHE_NAME=".detect-board-cache"
-
-set -x
 
 function outputDevice
 {
@@ -39,10 +37,11 @@ function macOS
     fi
 }
 
-# function wsl
-# {
-    
-# }
+function wsl
+{
+    dev=$(cmd.exe /C mode | grep "Status" -A 2 | grep "115200" -B 2 | grep "COM" | cut -d: -f1 | tr -d '\r')
+    outputDevice "/dev/ttyS${dev#"Status for device COM"}"
+}
 
 function linux
 {
