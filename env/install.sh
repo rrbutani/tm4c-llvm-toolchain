@@ -77,7 +77,6 @@ declare -A REGULAR_DEPS=( \
     [openocd]='`apt install openocd` or `brew install openocd`?' \
     [dot]='`apt install graphviz` or `brew install graphviz`?' \
     [gdb-multiarch]='`apt install gdb-multiarch` or `brew install gdb-multiarch`?' \
-    [code]="going to https://code.visualstudio.com/" \
     [clang]='`apt install clang` or `brew install clang`?' \
     [clangd]='`apt install clangd` or `brew install clangd`?' \
     [clang-tidy]='`apt install clang-tidy` or `brew install clang`?' \
