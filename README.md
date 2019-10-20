@@ -242,23 +242,24 @@ TODO: examples branch
 
 ##### Ord:
  - [ ] Add headers (and public headers?) to files_to_format
- - [ ] Make `tlt.sh`.
- - [ ] Add `tlt.sh` init support.
-    + [ ] Make it drop .gitignore files if not present.
- - [ ] Add a `misc/install.sh` script that does:
-    + [ ] clones the repo to `${HOME}/.tlt`
-    + [ ] yells if it's not in `${PATH}`
-    + [ ] checks that you've installed things right (for now won't try to do these things for you..)
-      * [ ] /usr/lib/... (newlib-nano and compiler-rt)
-      * [ ] all the clang tools + all the things the container would give you
-      * [ ] check bash version!! (yell about homebrew on macOS?)
+ - [x] Make `tlt.sh`.
+ - [x] Add `tlt.sh` init support.
+    + [x] Make it drop .gitignore files if not present. (target + build.ninja)
+ - [x] Add a `misc/install.sh` script that does:
+    + [x] clones the repo to `${HOME}/.tlt`
+    + [x] yells if it's not in `${PATH}`
+    + [x] checks that you've installed things right (for now won't try to do these things for you..)
+      * [x] /usr/lib/... (newlib-nano and compiler-rt)
+      * [x] all the clang tools + all the things the container would give you
+      * [x] check bash version!! (yell about homebrew on macOS?)
       * [ ] ninja version?
- - [ ] Add a `tlt` self-update command.
- - [ ] Add `tlt` update.
- - [ ] Add a version/help screen to `tlt` (the default).
- - [ ] Add .env file support to `gen.sh`
-    + [ ] subtle stuff about the load order?
-    + [ ] silently replace COMMON_DIR if doesn't exist
+      * [ ] udev rule on Linux?
+ - [x] Add a `tlt` self-update command.
+ - [x] Add `tlt` update.
+ - [x] Add a version/help screen to `tlt` (the default).
+ - [x] Add .env file support to `gen.sh`
+    + [x] subtle stuff about the load order?
+    + [x] silently replace COMMON_DIR if doesn't exist
  - [ ] Make the template repo:
     + [ ] .gitignore
     + [ ] GitHub Actions CI!
@@ -274,6 +275,8 @@ TODO: examples branch
     + [ ] Tag + upload the container to dockerhub and github
     + [ ] Check that all the versions match
     + [ ] Run shellcheck
+    + [ ] Extract compiler-rt and newlib-nano and zip em up and upload to GitHub releases (on tag?).
+      * [ ] Maybe just do this manually for now...
     + [ ] Running inside the container
       * [ ] Clone the template project
       * [ ] Run these commands and check that they don't fail:
@@ -298,6 +301,7 @@ TODO: examples branch
    + [ ] Add a rule to copy over the PUB_LIB_HEADERS + use it
  - [ ] Put up the ninja fork
    + [ ] Go use it in the container
+ - [ ] UART
  - [ ] Get `gen.sh` to _use_ modules
    + [ ] recursively regenerate
    + [ ] extract the info (headers, name)
@@ -350,6 +354,7 @@ TODO: examples branch
        - install newlib-nano + compiler-rt
        - install run-clang-format
        - install tlt
+           + Also add to $PATH!
        - done?
      * Linux-docker (if you're daring):
        - udev rule
