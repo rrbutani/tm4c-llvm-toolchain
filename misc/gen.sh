@@ -715,7 +715,7 @@ function conclusion {
 		${browse_docker_flags}
 
 		# TODO: Docker or not? Possibly only an issue for 'docker' configs..
-		build compile_commands.json: compdb
+		build compile_commands.json: compdb | build.ninja
 		build compdb: phony compile_commands.json
 
 		build format: format \$void${files_to_format[@]}
