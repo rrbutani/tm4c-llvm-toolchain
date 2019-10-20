@@ -51,8 +51,6 @@ SECTIONS
         *(.rodata*)
         . = ALIGN(4);
 
-        __text_end_vma = .;
-
     } > FLASH /* As mentioned, this will go into Flash */
 
     /* Used for "exception winding" and stack traces, unclear if needed here.
@@ -62,8 +60,8 @@ SECTIONS
      */
     .ARM.exidx :
     {
-        *(.ARM.exidx*)
-        *(.gnu.linkonce.armexidx*)
+        /**(.ARM.exidx*)*/
+        /**(.gnu.linkonce.armexidx*)*/
 
         /* This is the end of the text section, expose a symbol */
         __text_end_vma = .;
