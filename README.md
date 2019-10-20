@@ -185,6 +185,10 @@ TODO: examples branch
 
 ### Status
 
+#### Known Issues:
+ - Exiting from a debugger without stepping causes the debug chip to go into a state `openocd` really doesn't like (restarting seems to be the quickest way to get it out of this state).
+     + For now, run `continue` before you leave the debugger.
+
 ##### Toolchain Container
 - [x] newlib + newlib nano
 - [x] arm-compiler-rt for intrinsics
@@ -234,3 +238,129 @@ TODO: examples branch
 - [ ] Add a clang format file, maybe
 - [ ] TODO: fix github actions tagging (version)
 - [ ] TODO: add some real CI?
+
+
+##### Ord:
+ - [ ] Add headers (and public headers?) to files_to_format
+ - [ ] Make `tlt.sh`.
+ - [ ] Add `tlt.sh` init support.
+    + [ ] Make it drop .gitignore files if not present.
+ - [ ] Add a `misc/install.sh` script that does:
+    + [ ] clones the repo to `${HOME}/.tlt`
+    + [ ] yells if it's not in `${PATH}`
+    + [ ] checks that you've installed things right (for now won't try to do these things for you..)
+      * [ ] /usr/lib/... (newlib-nano and compiler-rt)
+      * [ ] all the clang tools + all the things the container would give you
+      * [ ] check bash version!! (yell about homebrew on macOS?)
+      * [ ] ninja version?
+ - [ ] Add a `tlt` self-update command.
+ - [ ] Add `tlt` update.
+ - [ ] Add a version/help screen to `tlt` (the default).
+ - [ ] Add .env file support to `gen.sh`
+    + [ ] subtle stuff about the load order?
+    + [ ] silently replace COMMON_DIR if doesn't exist
+ - [ ] Make the template repo:
+    + [ ] .gitignore
+    + [ ] GitHub Actions CI!
+      * [ ] use the container
+      * [ ] run build
+      * [ ] run check
+    + [ ] .clang-format.yml
+    + [ ] .clang-tidy.yml
+    + [ ] just flash an LED
+    + [ ] check in an .env file; not the build.ninja
+ - [ ] CI/CD:
+    + [ ] Build the container w/new actions
+    + [ ] Tag + upload the container to dockerhub and github
+    + [ ] Check that all the versions match
+    + [ ] Run shellcheck
+    + [ ] Running inside the container
+      * [ ] Clone the template project
+      * [ ] Run these commands and check that they don't fail:
+        - build
+        - fmt
+        - tidy
+        - size
+        - sections
+        - clean
+        - scrub
+        - powerwash
+        - pristine
+        - fix
+        - update
+        - compdb
+        - all
+        - graph
+ - [ ] Add lib support to `gen.sh`
+   + [ ] Use PUB_LIB_HEADERS
+   + [ ] Add ar rules + use them for libraries
+     * actually, `ar` doesn't work since bitcode... may need to ditched whole program LTO and make .a files here :-(
+   + [ ] Add a rule to copy over the PUB_LIB_HEADERS + use it
+ - [ ] Put up the ninja fork
+   + [ ] Go use it in the container
+ - [ ] Get `gen.sh` to _use_ modules
+   + [ ] recursively regenerate
+   + [ ] extract the info (headers, name)
+   + [ ] add to header_search_dirs
+   + [ ] add to link
+ - [ ] Locally, turn RASLib and StellarisWare into tlt libraries and verify that that works.
+   + [ ] Potentially make RASLib just depend on local StellarisWare (but this'll break CI in places and just generally be gross).
+ - [ ] Make the `rasware-template` repo:
+   + [ ] Local stellarisware and RASLib until the PR goes through
+   + [ ] same stuff as the other template repo
+   + [ ] plus VS Code:
+     * [ ] ninja targets
+     * [ ] debug configuration (may need a script)
+     * [ ] remote environment (for linux)
+     * [ ] remote environment (for WSL)
+ - [ ] Manually get WSL working.
+ - [ ] Fix up the openocd script.
+   + [ ] Check it into the repo
+ - [ ] Fix up the openocd install script.
+   + [ ] Check it into the repo
+ - [ ] Test the WSL remote environment VS Code thing
+ - [ ] Finally, docs:
+   + [ ] Make a docs folder in the repo
+   + [ ] Add the mdbook structure
+   + [ ] Steal the appropriate sections from the old thing
+   + [ ] Update CI to push built docs to `gh-pages`
+   + [ ] Fill 'em out:
+   + [ ] Structure, tentatively:
+     * WSL:
+       - install WSL + the aliases and all that old config
+       - install openocd
+       - install VS Code
+       - go to Linux-common
+     * Linux:
+       - install the udev rule
+       - install VS Code
+       - go to Linux-common
+     * Linux-common:
+       - install:
+         + git, clang, clangd, clang-format, clang-tidy, llvm-tools, lld, gdb-multiarch, openocd, etc.
+       - go to common
+     * macOS:
+       - install homebrew
+       - update bash
+       - xcode select or whatever
+       - clang, clangd, clang-format, clang-tidy, llvm-tools, lld, gdb-multiarch, openocd, etc.
+       - go to common
+     * Common:
+       - install ninja (the fork!)
+       - install newlib-nano + compiler-rt
+       - install run-clang-format
+       - install tlt
+       - done?
+     * Linux-docker (if you're daring):
+       - udev rule
+       - install docker
+       - install tlt with `--docker`
+       - install VS Code
+       - clone the repo + press the button
+       - that's it
+ - [ ] Later docs:
+    + [ ] How to use TLT (all the commands, etc.)
+    + [ ] Examples (library example, binary example, using modules example)
+    + [ ] Implementation notes
+    + [ ] Misc:
+      * thank yous + we accept PRs, etc. on the first page
