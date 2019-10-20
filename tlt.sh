@@ -137,10 +137,14 @@ function new {
 		build.ninja
 		target/
 		EOF
+
+        print "Added a .gitignore." "${CYAN}"
     fi
 
-    if [ ! -f ".git" ]; then
+    # If the target directory isn't already part of a git repo, make one!
+    if ! git -C "${target_dir}" rev-parse --git-dir &> /dev/null; then
         git init -C "${target_dir}"
+        print "Made a new git repo." "${CYAN}"
     fi
 
     print "\nYou're all set up! 🎉" "${CYAN}"
