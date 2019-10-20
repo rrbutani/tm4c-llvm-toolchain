@@ -244,7 +244,7 @@ TODO: examples branch
  - [ ] Add headers (and public headers?) to files_to_format
  - [x] Make `tlt.sh`.
  - [x] Add `tlt.sh` init support.
-    + [x] Make it drop .gitignore files if not present. (target + build.ninja)
+    + [x] Make it drop .gitignore files if not present. (target + build.ninja + compile_commands.json)
  - [x] Add a `misc/install.sh` script that does:
     + [x] clones the repo to `${HOME}/.tlt`
     + [x] yells if it's not in `${PATH}`
@@ -260,16 +260,16 @@ TODO: examples branch
  - [x] Add .env file support to `gen.sh`
     + [x] subtle stuff about the load order?
     + [x] silently replace COMMON_DIR if doesn't exist
- - [ ] Make the template repo:
-    + [ ] .gitignore
-    + [ ] GitHub Actions CI!
-      * [ ] use the container
-      * [ ] run build
-      * [ ] run check
-    + [ ] .clang-format.yml
-    + [ ] .clang-tidy.yml
-    + [ ] just flash an LED
-    + [ ] check in an .env file; not the build.ninja
+ - [x] Make the template repo:
+    + [x] .gitignore
+    + [ ] GitHub Actions CI! (pending publication)
+      * [x] use the container
+      * [x] run build
+      * [x] run check
+    + [x] .clang-format
+    + [x] .clang-tidy
+    + [x] just flash an LED
+    + [x] check in an .env file; not the build.ninja
  - [ ] CI/CD:
     + [ ] Build the container w/new actions
     + [ ] Tag + upload the container to dockerhub and github
@@ -297,13 +297,13 @@ TODO: examples branch
  - [ ] Add lib support to `gen.sh`
    + [ ] Use PUB_LIB_HEADERS
    + [ ] Add ar rules + use them for libraries
-     * actually, `ar` doesn't work since bitcode... may need to ditched whole program LTO and make .a files here :-(
+     * actually, `ar` doesn't work since bitcode... may need to ditch whole program LTO and make .a files here :-(
    + [ ] Add a rule to copy over the PUB_LIB_HEADERS + use it
- - [ ] Put up the ninja fork
-   + [ ] Go use it in the container
+ - [x] Put up the ninja fork
+   + [x] Go use it in the container
  - [ ] UART
  - [ ] Get `gen.sh` to _use_ modules
-   + [ ] recursively regenerate
+   + [x] recursively regenerate
    + [ ] extract the info (headers, name)
    + [ ] add to header_search_dirs
    + [ ] add to link
