@@ -101,7 +101,10 @@ c_flags = $
     -mfpu=fpv4-sp-d16 $
     -mfloat-abi=hard $
     -flto $
-    -g
+    -g $
+    -Dgcc $
+    -DPART_LM4F120H5QR $
+    -DTARGET_IS_BLIZZARD_RA1
 
 cc_flags = $c_flags $
     -ffunction-sections $
