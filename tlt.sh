@@ -17,6 +17,11 @@ readonly BROWN='\033[0;33m'
 readonly RED='\033[1;31m'
 readonly NC='\033[0m' # No Color
 
+# Global Vars #
+
+${TLT_FILE:-".tlt"}
+TLT_INSTALL_DIR="$(dirname "$(realpath "${0}")")"
+
 # Functions #
 
 # shellcheck disable=SC2059
@@ -49,14 +54,105 @@ function help {
 
     cmd "   init" "🔨 Creates a new project."
     cmd " update" "🔄 Regenerates the build file for the current project."
-    cmd "   help" "ℹ️ Displays this help message!"
     cmd "upgrade" "💿 Tries to update your tlt installation."
+    cmd "   help" "ℹ️ Displays this help message!"
+    cmd "version" "🔢 Shows the version number for the tlt installation."
 
     exit "${1}"
 }
 
+function upgrade {
+    local local_sha upstream_sha
+    g () { git -C "${TLT_INSTALL_DIR}" "${@}"; }
+
+    g fetch
+    local_sha="$(g rev-parse HEAD)"
+    upstream_sha="$(g rev-parse HEAD)"
+
+    if [ "${local_sha}" != "${upstream_sha}" ]; then
+        print "Update available!" "${BOLD}"
+        print "Current version is ${VERSION}.\n"
+
+        print "Attempting to update..." "${BROWN}"
+        g pull
+
+        print -n "New version is $("${0}" version)." "${BOLD}"
+        print "Success!"
+    else
+        print -n "Already up to date!" "${CYAN}"
+        print " (version: ${VERSION})"
+    fi
+}
+
+function update {
+    if [ ! -f "${TLT_FILE}" ]; then
+        print "It doesn't look like this is a tlt project!" "${RED}"
+        print "(we couldn't find a \`${TLT_FILE}\` file)\n"
+        print "If you're trying to make a new project, try running \`${0} init\`."
+
+        exit 2
+    fi
+
+    "${TLT_INSTALL_DIR}/gen.sh"
+}
+
+function new {
+    local target_dir proj_name type mode modules
+    target_dir="$(realpath "${2-.}")"
+
+    print "Making a new tlt project in \`${target_dir}\`.\n" "${CYAN}"
+    mkdir -p "${target_dir}"
+
+    read -r -p "First, let's give this project a name: " proj_name
+
+    print "Now pick a project type: binary or library?"
+    select type in "binary" "library"; do
+        case $type in
+            "binary") proj_name="${proj_name}.out"
+                    break;;
+            "library") proj_name="${proj_name}.a"
+                    break;;
+        esac
+    done
+
+    print "Next, a project mode:"
+    print "If you're not sure, choose native."
+    select mode in "native" "docker" "hybrid"; do
+        case $mode in
+            "native" | "docker" | "hybrid") break;;
+        esac
+    done
+
+    print "Last step! If you'd like to use any modules in your project, "
+    print "list them here. Otherwise just press enter."
+    read -r -p "Modules: " modules
+
+    (cd "${target_dir}"; \
+        "${TLT_INSTALL_DIR}/gen.sh" \
+            "${mode}" "${proj_name}" "${modules}" "${TLT_INSTALL_DIR}")
+
+    if [ ! -f "${target_dir}/.gitignore" ]; then
+        cat <<-EOF > "${target_dir}/.gitignore"
+        # tlt project files #
+        build.ninja
+        target/
+		EOF
+    fi
+
+    print "You're all set up! 🎉" "${CYAN}"
+}
+
 case ${SUBCOMMAND} in
+    "new" | "init") new "${@}"
+        ;;
+    "update" | "build" | "up" ) update
+        ;;
+    "upgrade" | "self-update") upgrade
+        ;;
     "help" | "info" ) help 0
+        ;;
+    "version")
+        print "${VERSION}"
         ;;
     *)  print "Sorry, we don't understand \`${*}\`! Here's the help message:    " "${RED}"
         help 1
