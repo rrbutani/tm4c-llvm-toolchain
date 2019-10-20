@@ -72,7 +72,9 @@ function upgrade {
 
     if [ "${local_sha}" != "${upstream_sha}" ]; then
         print "Update available!" "${BOLD}"
-        print "Current version is ${VERSION}.\n"
+        print "Current version is ${VERSION}."
+        print "Current SHA: ${local_sha}"
+        print "    New SHA: ${upstream_sha}\n"
 
         print "Attempting to update..." "${BROWN}"
         g pull
@@ -81,7 +83,7 @@ function upgrade {
         print "Success!"
     else
         print -n "Already up to date!" "${CYAN}"
-        print " (version: ${VERSION})"
+        print " (version: ${VERSION}; SHA: ${local_sha})"
     fi
 }
 
