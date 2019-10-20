@@ -151,7 +151,7 @@ fmt_fix_flags = $
     -i
 
 tidy_flags = $
-  --checks=readability*,bugprone*,modernize*,cppcoreguidelines* $
+  --checks=bugprone*,modernize* $
   --format-style=file $
   --system-headers
 

@@ -3,11 +3,11 @@
 VERSION=0.2.2
 
 # Options (arguments):
-MODE=${1:-docker} # native or docker or hybrid
-TARGET=${2:-proj.out} # .out or .a
-MODULE_STRING=${3:-""} # list of things that end with .a as a string
-COMMON_PATH=${4:-$(dirname "$0")/..} # default: assumes this script is in common
-TLT_FILE=${5:-".tlt"} # looks for this file for variables and arguments
+MODE="${1:-docker}" # native or docker or hybrid
+TARGET="${2:-proj.out}" # .out or .a
+MODULE_STRING="${3:-""}" # list of things that end with .a as a string
+COMMON_PATH="${4:-$(dirname "$0")/..}" # default: assumes this script is in common
+TLT_FILE="${5:-".tlt"}" # looks for this file for variables and arguments
 
 # All or nothing:
 set -e
@@ -243,23 +243,23 @@ function filter_exists { if [ -d "${1}" ]; then echo "$1"; fi }
 
 # shellcheck disable=SC2059
 function print {
-    N=0
     n="-e"
 
-    if [[ "$*" == *"-n" ]]; then
-        N=1
+    if [[ "$1" == "-n" ]]; then
         n="-ne"
+        shift
     fi
 
-    if [ "$#" -eq $((1 + N)) ]; then
-        >&2 echo $n "$1"
-    elif [ "$#" -eq $((2 + N)) ]; then
-        >&2 printf "${2}" && >&2 echo $n "$1" && >&2 printf "${NC}"
+    if [ "$#" -eq 1 ]; then
+        echo $n "$1"
+    elif [ "$#" -eq 2 ]; then
+        printf "${2}" && >&2 echo $n "$1" && >&2 printf "${NC}"
     else
-        >&2 printf "${RED}" && >&2 echo "Received: $* ($# args w/N=$N)" &&
+        >&2 printf "${RED}" && >&2 echo "Received: $* ($# args)" &&
         >&2 printf "${NC}"; return 1
     fi
 }
+
 
 # $1 : exit message; $2 : an anchor for the README; $3 : exit code
 function error {
@@ -291,7 +291,7 @@ function longest_common_prefix {
     local prefix=""
     local idx=0
     local char=''
-    declare -a arr=($@)
+    declare -a arr=("${@}")
 
     [ "${#arr[@]}" -eq 0 ] && return 1 # We won't deal with empty arrays
 
@@ -483,7 +483,7 @@ C_rule () { p "cxx"; }
 
 function find_source_files {
     declare -a -g "folders=(${FOLDERS})"
-    IFS="|" read -a globs_specs <<< "$GLOBS"
+    IFS="|" read -ra globs_specs <<< "$GLOBS"
 
     for g in "${globs_specs[@]}"; do
         glob=$(cut -d: -f1 <<< "${g}")
@@ -529,7 +529,7 @@ function find_source_files {
         object_paths_for_printing["${k}"]="'${obj}'"
     done
 
-    print_kvs object_paths_for_printing ${NC} ${CYAN}
+    print_kvs object_paths_for_printing "${NC}" "${CYAN}"
 
     unset IFS
 }
@@ -805,7 +805,7 @@ function conclusion {
 }
 
 # I know, I know, but shhh
-🐋() { echo 🐋; }
+# 🐋() { echo 🐋; }
 
 function fini {
     : # TODO:
@@ -831,7 +831,7 @@ prelude
 docker_vars
 body "debug"
 body "release"
-conclusion "release"
+conclusion "debug" # TODO: make this configurable
 fini
 
 # TODO: Check if we're on WSL
