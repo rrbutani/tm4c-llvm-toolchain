@@ -43,7 +43,7 @@ ARG VERSION=0.3.0
 ARG LLVM_VER=9
 ARG INSTALL_DIR=/usr
 ARG NEWLIB_TAG=newlib-3.1.0
-ARG NINJA_TAG=v1.9.0
+ARG NINJA_TAG=a7e3eef91cf63d62deb28eecaaa227fc61d9044d
 ARG RUN_CLANG_FMT_SHA=d849ff8507f62713d1433bad5db015f7c68b2891
 
 # Compiler-RT and friends
@@ -189,12 +189,10 @@ RUN : \
  && cd ..
 
 ARG NINJA_TAG
-COPY env/compdb.patch compdb.patch
 RUN : \
- && git clone https://github.com/ninja-build/ninja.git \
+ && git clone https://github.com/rrbutani/ninja.git \
  && cd ninja \
  && git checkout ${NINJA_TAG} \
- && git apply ../compdb.patch \
  && CXX=clang++-${LLVM_VER} ./configure.py --bootstrap
 
 
