@@ -1,0 +1,8 @@
+# Olimex Ltd. OpenOCD JTAG TINY
+ATTR{idVendor}=="15ba", ATTR{idProduct}=="0004", GROUP="plugdev", MODE="0660"
+# Prolific Technology, Inc. PL2303 Serial Port
+ATTR{idVendor}=="067b", ATTR{idProduct}=="2303", GROUP="plugdev", MODE="0660"
+# USB Serial
+ATTR{idVendor}=="10c4", ATTR{idProduct}=="ea60", GROUP="plugdev", MODE="0660"
+# TI Stellaris Launchpad
+ATTR{idVendor}=="1cbe", ATTR{idProduct}=="00fd", GROUP="plugdev", MODE="0660"
