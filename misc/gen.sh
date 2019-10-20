@@ -550,6 +550,9 @@ function prelude {
 		compiler_rt_dir = ${COMPILER_RT_DIR}
 		newlib_dir = ${NEWLIB_DIR}
 
+		# Our placeholder file to fool compdb:
+		void = \$builddir/\$unused_file
+
 		header_search_dirs =$(
 		for dir in "${include_dirs[@]}"; do
 			echo -ne " $\n  -I$dir"
@@ -646,11 +649,13 @@ function body {
 
 # $1 : default build type (i.e. debug, release, etc.)
 function conclusion {
-    local files_to_format=$(
+    local files_to_format
+
+    files_to_format=$(
         for f in "${object_paths[@]}"; do
             { [[ $f =~ .*\.s$ ]] ||
               [[ $f =~ .*\.S$ ]] ||
-              [[ $f =~ ^\${common_dir}.* ]]; } ||
+              [[ $f =~ ^\$\{common_dir\}.* ]]; } ||
                 echo -ne " $\n  $(ninja_escaped_string "${f}")"
                 # echo -ne " $\n  '${f}'"
         done
@@ -706,8 +711,20 @@ function conclusion {
 		build compile_commands.json: compdb
 		build compdb: phony compile_commands.json
 
-		build format: format${files_to_format[@]}
+		build format: format \$void${files_to_format[@]}
 		build fmt: phony format
+
+		build format-check: format_check \$void${files_to_format[@]}
+		build fmt-check: phony format-check
+
+		build tidy: tidy \$void${files_to_format[@]} $
+		  | compile_commands.json
+
+		build tidy-check: tidy_check \$void${files_to_format[@]} $
+		  | compile_commands.json
+
+		build fix: phony tidy fmt
+		build check: phony tidy-check format-check
 
 		# A regenerate build statement that runs unconditionally.
 		build regenerate: regenerate
