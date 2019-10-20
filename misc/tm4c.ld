@@ -136,6 +136,7 @@ SECTIONS
 
         /* BSS Section ends here, expose a symbol */
         __bss_end_vma = .;
+        end = .;
     } > SRAM    /* Set to go into RAM so that our VMAs are correct. */
 
     /* Stuff that isn't needed for an embedded system */
