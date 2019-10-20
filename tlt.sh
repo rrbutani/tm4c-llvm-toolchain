@@ -19,7 +19,7 @@ readonly NC='\033[0m' # No Color
 
 # Global Vars #
 
-${TLT_FILE:-".tlt"}
+: "${TLT_FILE:=".tlt"}"
 TLT_INSTALL_DIR="$(dirname "$(realpath "${0}")")"
 
 # Functions #
@@ -105,7 +105,7 @@ function new {
 
     read -r -p "First, let's give this project a name: " proj_name
 
-    print "Now pick a project type: binary or library?"
+    print "\nNow pick a project type: binary or library?"
     select type in "binary" "library"; do
         case $type in
             "binary") proj_name="${proj_name}.out"
@@ -115,31 +115,35 @@ function new {
         esac
     done
 
-    print "Next, a project mode:"
-    print "If you're not sure, choose native."
+    print "\nNext, a project mode (if you're not sure, choose native):"
     select mode in "native" "docker" "hybrid"; do
         case $mode in
             "native" | "docker" | "hybrid") break;;
         esac
     done
 
-    print "Last step! If you'd like to use any modules in your project, "
+    print "\nLast step! If you'd like to use any modules in your project, "
     print "list them here. Otherwise just press enter."
     read -r -p "Modules: " modules
 
+    print "\nGenerating...\n" "${GREEN}"
     (cd "${target_dir}"; \
-        "${TLT_INSTALL_DIR}/gen.sh" \
+        "${TLT_INSTALL_DIR}/misc/gen.sh" \
             "${mode}" "${proj_name}" "${modules}" "${TLT_INSTALL_DIR}")
 
     if [ ! -f "${target_dir}/.gitignore" ]; then
         cat <<-EOF > "${target_dir}/.gitignore"
-        # tlt project files #
-        build.ninja
-        target/
+		# tlt project files #
+		build.ninja
+		target/
 		EOF
     fi
 
-    print "You're all set up! 🎉" "${CYAN}"
+    if [ ! -f ".git" ]; then
+        git init -C "${target_dir}"
+    fi
+
+    print "\nYou're all set up! 🎉" "${CYAN}"
 }
 
 case ${SUBCOMMAND} in
