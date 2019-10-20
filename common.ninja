@@ -2,7 +2,11 @@
 
 # Picking a higher version than is probably necessary to be safe.
 # 1.6 for rule scoping.
-ninja_required_version = 1.6
+#
+# We've switched to using our own fork of ninja so this is kind of moot now.
+# 1.9+ for compdb (it'll be in 1.10).
+# 1.9+ for subninja w/chdir (PR not merged; we use a patch _on top of_ it).
+ninja_required_version = 1.9
 
 # Everything here is 'common' amongst all projects that refer to this folder as
 # their common folder.
@@ -74,9 +78,11 @@ docker_flags  =
 docker_cntnr  =
 
 linker_script = "${common_dir}/misc/tm4c.ld"
-gdb_script = "${common_dir}/misc/gdb-script"
+
+gdb_script  = "${common_dir}/misc/gdb-script"
 lldb_script = "${common_dir}/misc/lldb-script"
 
+# This has to end with an extension clang-format understands.
 unused_file = .c
 
 # gen.sh should specify these explicitly, but here are defaults anyways:
@@ -279,18 +285,18 @@ rule sections
 # nm and numfmt will run inside the container, cut and grep will run outside.
 rule size
   command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $nm $
-    $nm_flags $
-    --print-size $
-    --size-sort $
-    $in $
+      $nm_flags $
+      --print-size $
+      --size-sort $
+      $in $
     | $docker_prefix $docker_mounts $docker_flags $docker_cntnr $numfmt $
-    $numfmt_flags $
-    --field 2 $
-    --format '-%10f' $
+      $numfmt_flags $
+      --field 2 $
+      --format '-%10f' $
     | cut -d- -f2- $
     | GREP_COLORS="$grep_colors" grep $
-    $grep_flags $
-    "^[[:space:]]*[0-9.iKMGT]*B"
+      $grep_flags $
+      "^[[:space:]]*[0-9.iKMGT]*B"
   description = $mode SIZE $in
   pool = console
 
@@ -439,14 +445,6 @@ rule compdb
       -t compdb $
     | $docker_prefix $docker_mounts $docker_flags $docker_cntnr $jq $
       '[.[] | select(.file != "$builddir/$unused_file")]' > $out
-#       '[.[] | select(.file != "$builddir/$unused_file")] + [{"file": "$builddir/$unused_file"}]' > $out
-# this is super weird: clang-tidy will warn about $unused_file not having a compile command if we put
-# in a compdb entry for it but have an empty compile command. But if we just omit the entry altogether, it
-# happily chugs along.
-#
-# Also note: if we don't include directory and compile keys, it'll just die (fails to use the compdb at all)
-# Also bizarre: if the file ($unused_file) doesn't end in an extension that clang-tidy recognizes, it'll
-# hard error (so we're using .c for now).
   description = $mode NINJA -t compdb > $out
 
 # Remove build artifacts.
