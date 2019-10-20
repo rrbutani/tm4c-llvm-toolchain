@@ -44,6 +44,7 @@ ARG LLVM_VER=8
 ARG INSTALL_DIR=/usr
 ARG NEWLIB_TAG=newlib-3.1.0
 ARG NINJA_TAG=v1.9.0
+ARG RUN_CLANG_FMT_SHA=6c91e1ceb31eb6afc2dff5c94c84bb88c362539b
 
 # Compiler-RT and friends
 FROM $BASE as libs
@@ -204,6 +205,7 @@ ARG VERSION
 ARG LLVM_VER
 ARG INSTALL_DIR
 ARG NEWLIB_TAG
+ARG RUN_CLANG_FMT_SHA
 
 LABEL version=${VERSION}
 LABEL props.base-image=${BASE}
@@ -277,7 +279,10 @@ ENV LIBRARY_PATH="$LIBRARY_PATH:/usr/arm-compiler-rt/lib/armv7e-m/:${NEWLIB_NANO
 ENV COMPILER_RT_DIR=/usr/arm-compiler-rt/lib
 
 RUN : \
- && curl -sL git.io/.gdbinit > ${HOME}/.gdbinit
+ && curl -sL git.io/.gdbinit > ${HOME}/.gdbinit \
+ && curl -sL https://raw.githubusercontent.com/Sarcasm/run-clang-format/${RUN_CLANG_FMT_SHA}/run-clang-format.py \
+    > /usr/bin/run-clang-format \
+ && chmod +x /usr/bin/run-clang-format
 
 RUN : \
  && alt () { update-alternatives --install /usr/bin/${1} ${1} $(which ${1}-${LLVM_VER}) 1; } \
@@ -285,14 +290,17 @@ RUN : \
  && alt clang++ \
  && alt clangd \
  && alt clang-tidy \
+ && alt run-clang-tidy \
+ && alt clang-apply-replacements \
  && alt clang-format \
  && alt ld.lld \
  && alt llvm-ar \
  && alt llvm-as \
  && alt llvm-objcopy \
  && alt llvm-objdump \
- && alt llvm-size \
  && alt llvm-ranlib \
+ && alt llvm-nm \
+ && alt llvm-size \
  && alt llvm-strings \
  && alt lldb
 

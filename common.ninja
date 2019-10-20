@@ -62,6 +62,10 @@ fmt  = clang-format
 tidy = clang-tidy
 
 jq = jq
+
+run-clang-format = run-clang-format
+clang-apply-replacements = clang-apply-replacements
+
 builddir = target
 
 docker_prefix =
@@ -131,7 +135,22 @@ gdb_flags =
 lldb_flags =
 
 fmt_flags = $
-    -style=Google
+    -style=file $
+    -fallback-style=Google
+
+fmt_fix_flags = $
+    -i
+
+tidy_flags = $
+  --system-headers
+
+tidy_fix_flags = $
+ --fix $
+ --fix-errors
+
+clang_apply_replacements_flags = $
+    -style=file $
+    -format
 
 nm_flags = $
   --demangle $
@@ -337,8 +356,44 @@ rule rm
 rule format
   command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $fmt $
     $fmt_flags $
-    -i $in
+    $fmt_fix_flags $
+    $in
   description = $mode FMT $in
+
+rule format_check
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $
+    $run-clang-format $
+    --clang-format-executable $fmt $
+    --extensions $file $
+    --color always $
+    -- $fmt_flags $
+    $in
+  description = $mode FMT (check) $in
+  pool = console
+
+# Requires compdb to be generated.
+rule tidy
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $tidy $
+    $tidy_fix_flags $
+    $tidy_flags $
+    $in
+  description = $mode TIDY $in
+  pool = console
+
+# Requires compdb to be generated.
+rule tidy_check
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $tidy $
+    $tidy_flags $
+    $in
+  description = $mode TIDY (check) $in
+  pool = console
+
+# Requires compdb to be generated.
+rule fix
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $
+    $clang-apply-replacements $
+    $clang_apply_replacements_flags
+  description = $mode TIDY + FMT
 
 rule touch
   command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr touch $
