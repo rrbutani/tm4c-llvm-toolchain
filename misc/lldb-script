@@ -26,5 +26,6 @@ openocd_pid=$!
 "${lldb}" "${4}" \
     -o "gdb-remote 3333" \
     -o "break set -n main" \
+    -o "si"
 
 trap 'kill -9 ${openocd_pid} &>/dev/null' EXIT SIGTERM

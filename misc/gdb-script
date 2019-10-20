@@ -3,5 +3,8 @@ target remote | openocd -c "source [find board/ek-tm4c123gxl.cfg]" -c "gdb_port 
 monitor reset init
 monitor halt
 
+monitor arm semihosting enable
+
 break main
+stepi
 set history filename target/gdb_history.log
