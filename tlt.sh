@@ -100,7 +100,7 @@ function update {
         exit 2
     fi
 
-    "${TLT_INSTALL_DIR}/gen.sh"
+    "${TLT_INSTALL_DIR}/misc/gen.sh"
 }
 
 function new {
@@ -143,6 +143,7 @@ function new {
 		# tlt project files #
 		build.ninja
 		target/
+		compile_commands.json
 		EOF
 
         print "Added a .gitignore." "${CYAN}"
