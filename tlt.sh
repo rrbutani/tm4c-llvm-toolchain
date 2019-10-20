@@ -80,7 +80,7 @@ function upgrade {
         g pull
 
         print -n "New version is $("${0}" version)." "${BOLD}"
-        print "Success!"
+        print "Success!" "${CYAN}"
     else
         print -n "Already up to date!" "${CYAN}"
         print " (version: ${VERSION}; SHA: ${local_sha})"
@@ -146,7 +146,7 @@ function new {
 
     # If the target directory isn't already part of a git repo, make one!
     if ! git -C "${target_dir}" rev-parse --git-dir &> /dev/null; then
-        git init -C "${target_dir}"
+        git init "${target_dir}"
         print "Made a new git repo." "${CYAN}"
     fi
 
