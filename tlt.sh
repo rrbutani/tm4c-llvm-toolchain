@@ -144,6 +144,8 @@ function new {
 		build.ninja
 		target/
 		compile_commands.json
+		graph.png
+		.clangd
 		EOF
 
         print "Added a .gitignore." "${CYAN}"
