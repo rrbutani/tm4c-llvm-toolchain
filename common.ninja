@@ -298,6 +298,7 @@ rule size
       --print-size $
       --size-sort $
       $in $
+    | grep -v " U " $
     | $docker_prefix $docker_mounts $docker_flags $docker_cntnr $numfmt $
       $numfmt_flags $
       --field 2 $
