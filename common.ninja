@@ -220,7 +220,7 @@ rule cc
     -c $in $
     -o $out
   description = $mode CC $in -> $out
-  depfile = "$out.d"
+  depfile = $out.d
   deps = gcc
 
 # Assembler without the preprocessor (.s files)
@@ -243,7 +243,7 @@ rule asp
     -c $in $
     -o $out
   description = $mode AS (w/preprocessor) $in -> $out
-  depfile = "$out.d"
+  depfile = $out.d
   deps = gcc
 
 rule cxx
@@ -256,7 +256,7 @@ rule cxx
     -c $in $
     -o $out
   description = $mode CXX $in -> $out
-  depfile = "$out.d"
+  depfile = $out.d
   deps = gcc
 
 rule link
