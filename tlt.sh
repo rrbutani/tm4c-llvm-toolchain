@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-VERSION=0.3.0
+VERSION=0.3.1
 
 # Arguments
 SUBCOMMAND=${1:-info}
