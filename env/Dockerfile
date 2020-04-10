@@ -349,5 +349,8 @@ RUN : \
  && alt llvm-size \
  && alt llvm-strings \
  && alt lldb
+ && : "and, cc:"
+    && update-alternatives --install /usr/bin/cc cc $(which clang) 1
 
+ENV PATH="/root/.cargo/bin:${PATH}"
 WORKDIR /opt/
