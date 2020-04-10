@@ -240,9 +240,9 @@ RUN : \
         jq \
     -qq 2>/dev/null \
  && apt-get clean -y \
-        -qq 2>/dev/null \
+    -qq 2>/dev/null \
  && apt-get autoremove -y \
-        -qq 2>/dev/null \
+    -qq 2>/dev/null \
  && rm -rf \
         /var/tmp/* \
         /var/lib/apt/lists/*
@@ -270,7 +270,7 @@ RUN : \
         python3-lldb-${LLVM_VER} \
         lldb-${LLVM_VER} \
         # clang-${LLVM_VER}-doc \
-     -qq 2>/dev/null \
+    -qq 2>/dev/null \
 # && : "The lldb-9 package has some weird conflicts; this is a workaround:" \
 #    && mkdir /tmp/lldb \
 #    && cd /tmp/lldb \
@@ -288,9 +288,9 @@ RUN : \
 #    && cd - \
 #    && rm -rf /tmp/lldb \
  && apt-get clean -y \
-        -qq 2>/dev/null \
+    -qq 2>/dev/null \
  && apt-get autoremove -y \
-        -qq 2>/dev/null \
+    -qq 2>/dev/null \
  && rm -rf \
         /var/tmp/* \
         /var/lib/apt/lists/*
@@ -310,6 +310,25 @@ RUN : \
         --default-toolchain ${RUST_VER} \
         --profile minimal \
         --target thumbv7em-unknown-none-eabi thumbv7em-unknown-none-eabi
+
+RUN : \
+ && apt-get update -y \
+    -qq 2>/dev/null \
+ && apt-get upgrade -y \
+    -qq 2>/dev/null \
+ && apt-get install -y \
+        python3-pip \
+   -qq 2>/dev/null \
+ && pip3 install gdb-tools \
+ && apt-get remove python3-pip -y \
+    -qq 2>/dev/null \
+ && apt-get clean -y \
+    -qq 2>/dev/null \
+ && apt-get autoremove -y \
+    -qq 2>/dev/null \
+ && rm -rf \
+        /var/tmp/* \
+        /var/lib/apt/lists/*
 
 RUN : \
  && alt () { update-alternatives --install /usr/bin/${1} ${1} $(which ${1}-${LLVM_VER}) 1; } \
