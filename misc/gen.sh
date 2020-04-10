@@ -373,7 +373,7 @@ function process_args {
     fi
 
     # Check COMMON_PATH:
-    declare -a common_files=(common.ninja misc/{gdb-script,tm4c.ld,gen.sh} src/startup.c asm/intrinsics.s)
+    declare -a common_files=(common.ninja misc/{gdb-script,lldb-script,detect-board,tm4c.ld,gen.sh} src/startup.c asm/intrinsics.s)
     for f in "${common_files[@]}"; do
         [ ! -f "${COMMON_PATH}/$f" ] &&
             error "Specified common path (${COMMON_PATH}) is missing ${f}."
@@ -395,8 +395,13 @@ function process_args {
 
         [ ! -d "${dir}" ] &&
             error "Module '${mod}' doesn't seem to exist."
-        [ ! -f "${dir}/build.ninja" ] &&
-            error "Module '${mod}' doesn't seem to have a build.ninja file. Please run \`gen.sh\` in the module."
+        [ ! -f "${dir}/${TLT_FILE}" ] &&
+            error "Module '${mod}' doesn't seem to have a \`${TLT_FILE}\` file. Please run \`gen.sh\` in the module."
+
+        print "Regenerating build files for ${lib} (in \`${dir}\`)." "${BROWN}"
+        (cd "${dir}" && "$(realpath "${0}")") || {
+		  error "Failed to regenerate build files for ${lib}!" "${RED}" 8
+		}
 
         { { grep -q "target_type = lib$" "${dir}/build.ninja" ||
             { hint="  hint: target_type in '${dir}/build.ninja' should be lib" && false; } } &&
@@ -412,6 +417,7 @@ function process_args {
     done
 
     # Process Include Dirs:
+    # shellcheck disable=SC2153
     declare -a -g "include_dirs=(${INCLUDE_DIRS})"
     for inc_dir in "${include_dirs[@]}"; do
     	# Warn but don't error out:
