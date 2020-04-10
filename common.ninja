@@ -291,7 +291,7 @@ rule objcopy
 
 rule cargo
   command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr bash -c " $
-    export RUSTFLAGS='-Clinker-plugin-lto --crate-type=staticlib'; $
+    export RUSTFLAGS='-Clinker-plugin-lto'; $
     $cargo $
       build $
       --color always $
@@ -302,7 +302,12 @@ rule cargo
       --lib $
       --target thumbv7em-none-eabihf $
       --target-dir $builddir/cargo/$package $
-    && cp $builddir/cargo/$package/thumbv7em-none-eabihf/${profile}/deps/lib${package}* $out $
+    && { $
+      for f in $builddir/cargo/$package/thumbv7em-none-eabihf/${profile}/deps/lib${package}*; do $
+        [[ \$$f -nt \$$newest ]] && newest=\$$f; $
+      done; $
+      cp \$$newest $out; $
+    } $
     "
   description = $mode [🦀] CARGO $package → $out
   depfile = $builddir/cargo/$package/thumbv7em-none-eabihf/${profile}/lib${package}.d
