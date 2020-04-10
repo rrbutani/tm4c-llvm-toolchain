@@ -224,7 +224,7 @@ rule cc
     $header_search_dirs $
     -c $in $
     -o $out
-  description = $mode CC $in -> $out
+  description = $mode CC $in → $out
   depfile = $out.d
   deps = gcc
 
@@ -235,7 +235,7 @@ rule as
     -O${c_opt_level} $
     -c $in $
     -o $out
-  description = $mode AS $in -> $out
+  description = $mode AS $in → $out
 
 # Assembler *with* the preprocessor (.S files)
 rule asp
@@ -247,7 +247,7 @@ rule asp
     $header_search_dirs $
     -c $in $
     -o $out
-  description = $mode AS (w/preprocessor) $in -> $out
+  description = $mode AS (w/preprocessor) $in → $out
   depfile = $out.d
   deps = gcc
 
@@ -260,7 +260,7 @@ rule cxx
     $header_search_dirs $
     -c $in $
     -o $out
-  description = $mode CXX $in -> $out
+  description = $mode CXX $in → $out
   depfile = $out.d
   deps = gcc
 
@@ -275,19 +275,20 @@ rule link
     -L ${compiler_rt_dir} $
     -L ${newlib_dir} $
     -o $out
-  description = $mode LINK $in -> $out
+  description = $mode LINK $in → $out
 
 rule ar
   command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $ar $
     $ar_flags $
     rcs $in $out
-  description = $mode AR $in -> $out
+  description = $mode AR $in → $out
 
 rule objcopy
   command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $objcopy $
     $objcopy_flags $
     $in $out
-  description = $mode OBJCOPY $in -> $out
+  description = $mode OBJCOPY $in → $out
+
 rule cargo
   command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr bash -c " $
     export RUSTFLAGS='-Clinker-plugin-lto --crate-type=staticlib'; $
