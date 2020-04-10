@@ -554,17 +554,27 @@ function find_source_files {
 
     for g in "${globs_specs[@]}"; do
         glob=$(cut -d: -f1 <<< "${g}")
-        func="$(cut -d: -f2 <<< "${g}")_rule"
+        rule_func="$(cut -d: -f2 <<< "${g}")_rule"
+        ext_func="$(cut -d: -f2 <<< "${g}")_ext"
 
-       type "${func}" > /dev/null 2>&1 ||
-            error "Rule function ${func} not found. Perhaps adjust your globs?"
+       type "${rule_func}" > /dev/null 2>&1 ||
+            error "Rule function ${rule_func} not found. Perhaps adjust your globs?"
 
-       globs["$(tr -s '%' '*' <<< "${glob}")"]="${func}"
+       type "${ext_func}" > /dev/null 2>&1 ||
+            error "Extension function ${ext_func} not found. Perhaps adjust your globs?"
+
+       globs["$(tr -s '%' '*' <<< "${glob}")"]="${rule_func}"
+       globs_exts["$(tr -s '%' '*' <<< "${glob}")"]="${ext_func}"
     done
 
     # Default files (from common dir):
-    object_paths["startup.o"]='${common_dir}/src/startup.c'
-    object_functions["startup.o"]=c_rule
+    # shellcheck disable=SC2016
+    object_paths["startup.$(c_ext)"]='${common_dir}/src/startup.c'
+    object_functions["startup.$(c_ext)"]=c_rule
+
+    # shellcheck disable=SC2016
+    object_paths["intrinsics.$(a_ext)"]='${common_dir}/asm/intrinsics.s'
+    object_functions["intrinsics.$(a_ext)"]=a_rule
 
     process_rust_crates
 
@@ -574,14 +584,15 @@ function find_source_files {
             for match in $(compgen -G "${f}/${g}"); do
                 obj_name="$(basename "${match}")"
                 obj_name="${obj_name%\.*}"
+                obj_ext="$(${globs_exts["${g}"]})"
 
-                while [ ${object_paths["${obj_name}.o"]+x} ]; do
+                while [ ${object_paths["${obj_name}.${obj_ext}"]+x} ]; do
                     # While there's a conflict, keep adding to obj_name:
                     obj_name="${obj_name}-dup"
                 done
 
-                object_paths["${obj_name}.o"]="$(realpath --relative-to=. "${match}")"
-                object_functions["${obj_name}.o"]="${globs["$g"]}"
+                object_paths["${obj_name}.${obj_ext}"]="$(realpath --relative-to=. "${match}")"
+                object_functions["${obj_name}.${obj_ext}"]="${globs["$g"]}"
             done
        done
     done
@@ -883,12 +894,12 @@ function fini {
 	print "type: \t\t ${mode}"
 	print "common dir: \t ${common_dir}"
 	print "modules: \t ${!modules[*]}"
-	print_kvs modules ${BROWN} ${CYAN} || :
+	print_kvs modules "${BROWN}" "${CYAN}" || :
 
 	print "$(longest_common_prefix "$(realpath .)/" "${common_dir}" "${!modules[@]}")"
-	print "new root dir = $root_dir" $PURPLE
+	print "new root dir = $root_dir" "${PURPLE}"
 
-	print "🐋 ($project_dir)" $CYAN
+	# print "🐋 ($project_dir)" "${CYAN}"
 }
 
 help_text "${@}"
