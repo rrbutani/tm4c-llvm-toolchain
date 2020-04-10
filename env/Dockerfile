@@ -40,7 +40,7 @@
 
 ARG BASE=ubuntu:18.04
 ARG VERSION=0.3.1
-ARG LLVM_VER=9
+ARG LLVM_VER=10
 ARG INSTALL_DIR=/usr
 ARG NEWLIB_TAG=newlib-3.1.0
 ARG NINJA_TAG=a7e3eef91cf63d62deb28eecaaa227fc61d9044d
@@ -57,6 +57,7 @@ RUN : \
  && apt-get install -y \
         curl gnupg \
         git make \
+        python \
         # binutils-arm-none-eabi \
     -qq 2>/dev/null
 
@@ -263,25 +264,26 @@ RUN : \
         clangd-${LLVM_VER} \
         lld-${LLVM_VER} \
         libc++-${LLVM_VER}-dev libc++abi-${LLVM_VER}-dev \
-        python-lldb-${LLVM_VER} \
+        python3-lldb-${LLVM_VER} \
+        lldb-${LLVM_VER} \
         # clang-${LLVM_VER}-doc \
-    -qq 2>/dev/null \
- && : "The lldb-9 package has some weird conflicts; this is a workaround:" \
-    && mkdir /tmp/lldb \
-    && cd /tmp/lldb \
-    && apt-get download lldb-${LLVM_VER} -y \
-       -qq 2>/dev/null \
-    && ar x lldb*.deb \
-        && : "This'll handle control.tar.{xz,gz} inputs, but it'll always make an .xz." \
-        && tar xf control.tar.* \
-        && sed -i '/^\(Breaks\|Replaces\):/d' control \
-        && tar c postinst md5sums control | xz -c > control.tar.xz \
-        && ar rcs lldb-modified.deb debian-binary control.tar.xz data.tar.* \
-    && : dpkg --ignore-depends=llvm-9-tools \
-            --install lldb*.deb \
-    && dpkg --install lldb-modified.deb \
-    && cd - \
-    && rm -rf /tmp/lldb \
+     -qq 2>/dev/null \
+# && : "The lldb-9 package has some weird conflicts; this is a workaround:" \
+#    && mkdir /tmp/lldb \
+#    && cd /tmp/lldb \
+#    && apt-get download lldb-${LLVM_VER} -y \
+#       -qq 2>/dev/null \
+#    && ar x lldb*.deb \
+#        && : "This'll handle control.tar.{xz,gz} inputs, but it'll always make an .xz." \
+#        && tar xf control.tar.* \
+#        && sed -i '/^\(Breaks\|Replaces\):/d' control \
+#        && tar c postinst md5sums control | xz -c > control.tar.xz \
+#        && ar rcs lldb-modified.deb debian-binary control.tar.xz data.tar.* \
+#    && : dpkg --ignore-depends=llvm-9-tools \
+#            --install lldb*.deb \
+#    && dpkg --install lldb-modified.deb \
+#    && cd - \
+#    && rm -rf /tmp/lldb \
  && apt-get clean -y \
         -qq 2>/dev/null \
  && apt-get autoremove -y \
