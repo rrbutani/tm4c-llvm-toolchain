@@ -35,7 +35,7 @@
 #  - charlie-ht from [this thread](https://git.io/fhNfB) for providing a patch
 #    for ninja's compdb tool that makes it actually emit rules
 #
-# Modified: Oct 20th, 2019
+# Modified: Apr 10th, 2020
 
 
 ARG BASE=ubuntu:18.04
@@ -45,6 +45,7 @@ ARG INSTALL_DIR=/usr
 ARG NEWLIB_TAG=newlib-3.1.0
 ARG NINJA_TAG=a7e3eef91cf63d62deb28eecaaa227fc61d9044d
 ARG RUN_CLANG_FMT_SHA=d849ff8507f62713d1433bad5db015f7c68b2891
+ARG RUST_VER=1.42.0
 
 # Compiler-RT and friends
 FROM $BASE as libs
@@ -205,6 +206,7 @@ ARG LLVM_VER
 ARG INSTALL_DIR
 ARG NEWLIB_TAG
 ARG RUN_CLANG_FMT_SHA
+ARG RUST_VER
 
 LABEL version=${VERSION}
 LABEL props.base-image=${BASE}
@@ -212,6 +214,7 @@ LABEL props.llvm-version=${LLVM_VER}
 LABEL props.newlib-install-dir=${INSTALL_DIR}
 LABEL props.newlib-version=${NEWLIB_TAG}
 LABEL props.ninja-version=${NINJA_TAG}
+LABEL props.rust-version=${RUST_VER}
 
 ENV VERSION=${VERSION}
 ENV NEWLIB_DIR="${INSTALL_DIR}/newlib"
@@ -300,7 +303,13 @@ RUN : \
  && curl -sL git.io/.gdbinit > ${HOME}/.gdbinit \
  && curl -sL https://raw.githubusercontent.com/rrbutani/run-clang-format/${RUN_CLANG_FMT_SHA}/run-clang-format.py \
     > /usr/bin/run-clang-format \
- && chmod +x /usr/bin/run-clang-format
+ && chmod +x /usr/bin/run-clang-format \
+ && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+    | sh -s -- \
+        --verbose -y \
+        --default-toolchain ${RUST_VER} \
+        --profile minimal \
+        --target thumbv7em-unknown-none-eabi thumbv7em-unknown-none-eabi
 
 RUN : \
  && alt () { update-alternatives --install /usr/bin/${1} ${1} $(which ${1}-${LLVM_VER}) 1; } \
