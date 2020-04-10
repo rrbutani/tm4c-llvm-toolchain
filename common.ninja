@@ -57,9 +57,12 @@ nm      = llvm-nm
 grep    = grep
 numfmt  = numfmt
 git     = git
+cargo   = cargo
 
-gdb  = gdb-multiarch
-lldb = lldb
+gdb    = gdb-multiarch
+lldb   = lldb
+screen = screen
+
 
 dot  = dot
 fmt  = clang-format
@@ -135,6 +138,8 @@ ld_flags = $
 
 objcopy_flags = $
     -O binary
+
+cargo_flags =
 
 size_flags = $
   --color
@@ -283,6 +288,24 @@ rule objcopy
     $objcopy_flags $
     $in $out
   description = $mode OBJCOPY $in -> $out
+rule cargo
+  command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr bash -c " $
+    export RUSTFLAGS='-Clinker-plugin-lto --crate-type=staticlib'; $
+    $cargo $
+      build $
+      --color always $
+      $cargo_flags $
+      $cargo_extra_flags $
+      --manifest-path $in $
+      --package $package $
+      --lib $
+      --target thumbv7em-none-eabihf $
+      --target-dir $builddir/cargo/$package $
+    && cp $builddir/cargo/$package/thumbv7em-none-eabihf/${profile}/deps/lib${package}* $out $
+    "
+  description = $mode [🦀] CARGO $package → $out
+  depfile = $builddir/cargo/$package/thumbv7em-none-eabihf/${profile}/lib${package}.d
+  deps = gcc
 
 rule sections
   command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr $size $
