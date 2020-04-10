@@ -175,6 +175,7 @@ with_default RELEASE_C_OPT "fast"
 with_default RELEASE_LTO_OPT "3"
 with_default DEBUG_C_OPT "0"
 with_default DEBUG_LTO_OPT "1"
+with_default RUST_CRATES ""
 
 ###############################################################################
 
@@ -215,10 +216,12 @@ project_dir=
 common_dir=
 root_dir=
 declare -A globs # [glob] -> language handler function
+declare -A globs_exts # [glob] -> file extension for produced files
 declare -a folders
 declare -A object_paths # [obj name] -> relative path
 declare -A object_functions # [obj name] -> handler function
 declare -a include_dirs
+declare -A rust_crates # [crate name] -> relative path to Cargo.toml
 
 # Some constants #
 
@@ -480,6 +483,64 @@ a_rule () { p "as"; }
 A_rule () { p "asp"; }
 c_rule () { p "cc"; }
 C_rule () { p "cxx"; }
+R_rule () { p "cargo"; }
+
+# $1: obj name, $2: build type (release, debug)
+a_rule_vars () { :; }
+A_rule_vars () { :; }
+c_rule_vars () { :; }
+C_rule_vars () { :; }
+R_rule_vars () {
+    echo ""
+    echo "    package=$(basename "${1}" ".$(R_ext)")"
+    if [[ "${2}" == "release" ]]; then
+        echo "    cargo_extra_flags=--release"
+        echo "    profile=release"
+    else
+        echo "    profile=debug"
+    fi
+}
+
+a_ext () { p "o"; }
+A_ext () { p "o"; }
+c_ext () { p "bc"; }
+C_ext () { p "bc"; }
+R_ext () { p "a"; }
+
+function process_rust_crates {
+    # Basically the same format as the globs:
+    # "name-of-crate:<path>|another-crate:<another/awful\:path>"
+    #
+    # The restriction is going to be that you can't have pipes (|) in your
+    # Cargo.toml file path, which I think is reasonable enough.
+    IFS="|" read -ra crates <<< "$RUST_CRATES"
+
+    for c in "${crates[@]}"; do
+        crate="$(cut -d: -f1 <<< "${c}")"
+        path="$(cut -d: -f2- <<< "${c}")"
+
+        # (TODO: are we okay to call cargo here? is this guaranteed to run in
+        # container?)
+        # Check that this really is a valid cargo crate with the name we were
+        # given:
+        cargo pkgid \
+                --manifest-path "${path}" \
+                "${crate}" \
+                --quiet ||
+            error "The specified crate ('${crate}' at '${path}') doesn't appear to exist."
+
+        if [ ${rust_crates["${crate}"]+x} ]; then
+            error "Multiple crates named '$crate' are specified!"
+        fi
+
+        # TODO: print out a list of the rust crates at the end
+
+        rust_crates["$crate"]="${path}"
+
+        object_paths["${crate}.$(R_ext)"]="$(realpath --relative-to=. "${path}")"
+        object_functions["${crate}.a"]=R_rule
+    done
+}
 
 function find_source_files {
     declare -a -g "folders=(${FOLDERS})"
@@ -499,8 +560,7 @@ function find_source_files {
     object_paths["startup.o"]='${common_dir}/src/startup.c'
     object_functions["startup.o"]=c_rule
 
-    object_paths["intrinsics.o"]='${common_dir}/asm/intrinsics.s'
-    object_functions["intrinsics.o"]=a_rule
+    process_rust_crates
 
     IFS=$'\n'
     for f in "${folders[@]}"; do
@@ -671,7 +731,9 @@ function body {
 
 	$(for obj in "${!object_paths[@]}"; do
 		echo "build $(ninja_escaped_string "\$builddir/${build_type}/objs/${obj}"): $(${object_functions["${obj}"]}) $(ninja_escaped_string "${object_paths["${obj}"]}")"
-		echo "    c_opt_level = \$c_opt_${build_type}"
+		echo -n "    c_opt_level = \$c_opt_${build_type}"
+        echo "$(${object_functions["${obj}"]}_vars "${obj}" "${build_type}")"
+        # echo ""
 	done)
 
 	build \$builddir/${build_type}/\$name.out: link$(
