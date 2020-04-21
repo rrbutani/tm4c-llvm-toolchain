@@ -13,7 +13,7 @@ on:
   pull_request:
 
 env:
-  IMAGE_NAME: rrbutani/arm-llvm-toolchain
+  IMAGE_NAME: arm-llvm-toolchain
   DOCKERFILE: env/Dockerfile
 
 jobs:
@@ -36,9 +36,10 @@ jobs:
     steps:
       - uses: docker/build-push-action@v1
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          repository: rrbutani/arm-llvm-toolchain
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: rrbutani/${IMAGE_NAME}
+          dockerfile: ${DOCKERFILE}
           tag_with_ref: true
           tag_with_sha: true
 
