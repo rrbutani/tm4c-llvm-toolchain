@@ -14,7 +14,7 @@ on:
 
 env:
   IMAGE_NAME: arm-llvm-toolchain
-  DOCKERFILE: env/Dockerfile
+  DOCKERFILE: "env/Dockerfile"
 
 jobs:
   build:
