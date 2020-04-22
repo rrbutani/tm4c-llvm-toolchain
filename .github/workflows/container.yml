@@ -38,8 +38,8 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-          repository: rrbutani/arm-llvm-toolchain
-          dockerfile: ${DOCKERFILE}
+          repository: rrbutani/${{ env.IMAGE_NAME }}
+          dockerfile: ${{ env.DOCKERFILE }}
           tag_with_ref: true
           tag_with_sha: true
 
