@@ -18,17 +18,24 @@ set print pretty on
 py import duel
 
 # ptype <var | type>
-define reset monitor reset halt end
-define current_exec python print(gdb.objfiles()[0].filename) end
 
+define reset
+    monitor reset halt
+end
+
+define current_exec
+    python print(gdb.objfiles()[0].filename)
+end
 
 # Uses descriptions/information sourced from here: https://interrupt.memfault.com/blog/cortex-m-fault-debug
 define hardfault
     python
 
-def get_mem(addr): return int(gdb.execute(f"x(0x{addr:X})", to_string = True).split("\t")[1].split(" ")[0].rstrip(), 0)
+def get_mem(addr):
+    return int(gdb.execute(f"x(0x{addr:X})", to_string = True).split("\t")[1].split(" ")[0].rstrip(), 0)
 
 CFSR_ADDR = 0xE000ED28
+
 HFSR_ADDR = 0xE000ED2C
 
 # Configurable Fault Status Register
@@ -39,6 +46,7 @@ UFSR = CFSR >> 16
 BFSR = CFSR >> 8 & 0b11111111
 # MemManage Status Register
 MMFSR = CFSR & 0b11111111
+
 # HardFault Status Register
 HFSR = get_mem(HFSR_ADDR)
 
@@ -87,19 +95,25 @@ def print_errs(val, prefix, dict):
 print_errs(UFSR, "UFSR", ufsr_faults)
 print_errs(BFSR, "BFSR", bfsr_faults)
 print_errs(MMFSR, "MMFSR", mmfsr_faults)
+
 print_errs(HFSR, "HFSR", hfsr_faults)
 
     end
 end
 
-define force_precise set *(0xE000E008 as *mut u32)=(*(0xE000E008 as *mut u32) | 1<<1) end
+define force_precise
+set *((uint32_t*) 0xE000E008)=(*((uint32_t*)0xE000E008) | 1<<1)
+end
 
-define print_bfar p/x *(0xE000ED38 as *mut u32) end
+define print_bfar
+p/x *((uint32_t*)0xE000ED38)
+end
 
 define reflash
     python
 from os.path import basename, dirname, splitext, getmtime
 import subprocess
+# import pty
 
 bin = gdb.objfiles()[0].filename
 axf = splitext(bin)[0] + ".axf"
