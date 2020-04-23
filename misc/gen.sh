@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-VERSION=0.4.1
+VERSION=0.4.2
 
 # Options (arguments):
 MODE="${1:-docker}" # native or docker or hybrid
