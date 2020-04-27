@@ -92,6 +92,7 @@ declare -A REGULAR_DEPS=( \
     [llvm-size]='`apt install clang` or `brew install clang`?' \
     [llvm-strings]='`apt install clang` or `brew install clang`?' \
     [lldb]='`apt install lldb` or `brew install lldb`?' \
+    [opt]='`apt install llvm` or `brew install llvm`?' \
     [run-clang-format]='checking the install instructions' \
     [ninja]="checking the install instructions" \
     [bash]='`apt install bash` or `brew install bash`?' \

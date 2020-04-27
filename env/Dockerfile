@@ -377,6 +377,7 @@ RUN : \
  && alt llvm-size \
  && alt llvm-strings \
  && alt lldb \
+ && alt opt \
  && : "and, cc:" \
     && update-alternatives --install /usr/bin/cc cc $(which clang) 1
 
