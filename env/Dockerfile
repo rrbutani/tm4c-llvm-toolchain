@@ -197,6 +197,29 @@ RUN : \
  && git checkout ${NINJA_TAG} \
  && CXX=clang++-${LLVM_VER} ./configure.py --bootstrap
 
+# TODO: it should be possible to tell the newlib build process where the source
+# files are going to end up so that the information in the DWARF data is just
+# already correct (i.e. we shouldn't need to make these empty directories so
+# that those paths end up working).
+#
+# Make an directory structure copy of the newlib/newlib-nano build dirs so
+# debuggers can resolve the actual source files.
+RUN : \
+ && mkdir -p /opt/dir-structure/ \
+ && cd /opt/newlib-build/ \
+    && find -type d -links 2 -exec mkdir -p "/opt/dir-structure/newlib-build/{}" \; \
+ && cd /opt/nano-build/ \
+    && find -type d -links 2 -exec mkdir -p "/opt/dir-structure/nano-build/{}" \;
+
+# We also want to include an actual copy of the source; for now we'll just
+# copy over all .c and .h files. We should be able to do better than this (i.e
+# we can exclude all the linux thread stuff) but this is okay for now.
+RUN : \
+  && mkdir -p /opt/dir-structure/newlib-cygwin \
+  && cd /opt/newlib-cygwin \
+  && find . -name "*.h" -exec bash -c 'cp -p --parents {} "/opt/dir-structure/newlib-cygwin" ' \; \
+  && find . -name "*.c" -exec bash -c 'cp -p --parents {} "/opt/dir-structure/newlib-cygwin" ' \;
+
 
 FROM $BASE
 
@@ -225,6 +248,11 @@ COPY --from=libs "${NEWLIB_DIR}" "${NEWLIB_DIR}"
 COPY --from=libs "${NEWLIB_NANO_DIR}" "${NEWLIB_NANO_DIR}"
 COPY --from=libs /opt/ninja/ninja /usr/bin/ninja
 COPY --from=libs /opt/ninja/misc/bash-completion /usr/share/bash-completion/completions/ninja
+
+# And now the stdlib source:
+COPY --from=lib /opt/dir-structure/newlib-cygwin /opt/newlib-cygwin
+COPY --from=lib /opt/dir-structure/newlib-build /opt/newlib-build
+COPY --from=lib /opt/dir-structure/nano-build /opt/nano-build
 
 RUN : \
  && apt-get update -y \
