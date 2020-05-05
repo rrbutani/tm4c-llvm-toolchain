@@ -380,6 +380,9 @@ RUN : \
  && alt opt \
  && : "and, cc:" \
     && update-alternatives --install /usr/bin/cc cc $(which clang) 1
+ && : "and, finally, python:" \
+    && update-alternatives --install /usr/bin/python python $(which python3) 1
+
 
 ENV PATH="/root/.cargo/bin:${PATH}"
 WORKDIR /opt/
