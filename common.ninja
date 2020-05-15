@@ -49,6 +49,7 @@ as  = clang
 cxx = clang++
 ar  = llvm-ar
 ld  = ld.lld
+opt = opt
 
 objcopy = llvm-objcopy
 size    = llvm-size
@@ -458,6 +459,9 @@ rule browse
 # dot outside; the container doesn't ship with graphviz (+ ~30MB) so this will
 # only work with native and hybrid configurations (or if you use a container
 # that has graphviz!).
+#
+# Update: this is no longer true, but we intentionally stick the generated png
+# file outside the container.
 rule graph
   command = $docker_prefix $docker_mounts $docker_flags $docker_cntnr ninja $
       -t graph $ninja_graph_target $
