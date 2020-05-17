@@ -250,9 +250,9 @@ COPY --from=libs /opt/ninja/ninja /usr/bin/ninja
 COPY --from=libs /opt/ninja/misc/bash-completion /usr/share/bash-completion/completions/ninja
 
 # And now the stdlib source:
-COPY --from=lib /opt/dir-structure/newlib-cygwin /opt/newlib-cygwin
-COPY --from=lib /opt/dir-structure/newlib-build /opt/newlib-build
-COPY --from=lib /opt/dir-structure/nano-build /opt/nano-build
+COPY --from=libs /opt/dir-structure/newlib-cygwin /opt/newlib-cygwin
+COPY --from=libs /opt/dir-structure/newlib-build /opt/newlib-build
+COPY --from=libs /opt/dir-structure/nano-build /opt/nano-build
 
 RUN : \
  && apt-get update -y \
